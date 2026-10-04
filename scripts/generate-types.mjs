@@ -24,7 +24,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const DEFAULT_LOCAL_SPEC = resolve(
   __dirname,
-  '../../../coffee-mail-api/openapi/product.json'
+  '../../coffee-mail-api/openapi/product.json'
 );
 
 const OUTPUT_PATH = resolve(__dirname, '../src/generated/openapi.d.ts');

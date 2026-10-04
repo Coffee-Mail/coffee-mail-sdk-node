@@ -201,6 +201,8 @@ export interface paths {
                                 openCount: number;
                                 /** @description Quantidade de cliques em links do e-mail */
                                 clickCount: number;
+                                /** @description Aberturas por proxy de privacidade; nao contam como abertura humana */
+                                proxyOpenCount: number;
                                 /** @description Tags associadas ao e-mail */
                                 tags: {
                                     /** @description Nome da tag */
@@ -336,6 +338,10 @@ export interface paths {
                          * @description Data/hora futura para o envio agendado do e-mail
                          */
                         scheduledAt?: string;
+                        /** @description Metadados customizados para rastreio ou webhook */
+                        metadata?: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };
@@ -496,6 +502,10 @@ export interface paths {
                          * @description Data/hora futura para o envio agendado do e-mail
                          */
                         scheduledAt?: string;
+                        /** @description Metadados customizados para rastreio ou webhook */
+                        metadata?: {
+                            [key: string]: unknown;
+                        };
                     }[];
                 };
             };
@@ -697,6 +707,8 @@ export interface paths {
                             openCount: number;
                             /** @description Quantidade de cliques em links do e-mail */
                             clickCount: number;
+                            /** @description Aberturas registradas por proxy de privacidade (Gmail Image Proxy, Apple MPP). Nao contam como abertura humana */
+                            proxyOpenCount: number;
                             /** @description Tags associadas ao e-mail */
                             tags: {
                                 /** @description Nome da tag */
@@ -1987,6 +1999,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/product/suppressions/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Dados para importação em lote de emails suprimidos */
+            requestBody: {
+                content: {
+                    "application/json": {
+                        suppressions: {
+                            /**
+                             * Format: email
+                             * @description Endereço de email a ser suprimido
+                             */
+                            email: string;
+                            /** @enum {string} */
+                            reason?: "manual" | "bounce" | "complaint";
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            insertedCount: number;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/product/suppressions/{id}": {
         parameters: {
             query?: never;
@@ -3177,6 +3241,8 @@ export interface paths {
                     granularity?: "day" | "week" | "month";
                     /** @description Atalho para intervalo relativo (últimos 7/30/90 dias) */
                     period?: "last7d" | "last30d" | "last90d";
+                    /** @description Filtra estatísticas por tipo de email: all, transactional ou broadcast */
+                    emailType?: "all" | "transactional" | "broadcast";
                 };
                 header?: never;
                 path?: never;
@@ -3199,12 +3265,65 @@ export interface paths {
                             totalBounced: number;
                             /** @description Total de emails que falharam no envio */
                             totalFailed: number;
+                            /**
+                             * @description Total de emails abertos no período
+                             * @default 0
+                             */
+                            totalOpened: number;
+                            /**
+                             * @description Total de links clicados no período
+                             * @default 0
+                             */
+                            totalClicked: number;
+                            /**
+                             * @description Taxa de entrega percentual
+                             * @default 0
+                             */
+                            deliveryRate: number;
+                            /**
+                             * @description Taxa de abertura percentual
+                             * @default 0
+                             */
+                            openRate: number;
+                            /**
+                             * @description Taxa de cliques percentual
+                             * @default 0
+                             */
+                            clickRate: number;
+                            /** @description Divisão de métricas entre transacionais e broadcasts */
+                            breakdown?: {
+                                transactional: {
+                                    sent: number;
+                                    delivered: number;
+                                    bounced: number;
+                                    opened: number;
+                                    clicked: number;
+                                };
+                                broadcast: {
+                                    sent: number;
+                                    delivered: number;
+                                    bounced: number;
+                                    opened: number;
+                                    clicked: number;
+                                };
+                            };
+                            /**
+                             * @description Distribuição dos principais clientes de email
+                             * @default []
+                             */
+                            topClients: {
+                                /** @description Nome do cliente de email / navegador */
+                                name: string;
+                                /** @description Total de aberturas */
+                                count: number;
+                                /** @description Porcentagem relativa */
+                                percentage: number;
+                                /** @description Tipo de dispositivo detectado */
+                                deviceType: string;
+                            }[];
                             /** @description Série histórica de estatísticas agrupada por período */
                             data: {
-                                /**
-                                 * Format: date-time
-                                 * @description Início do intervalo de tempo agregado
-                                 */
+                                /** @description Início do intervalo de tempo agregado */
                                 period: string;
                                 /** @description Emails enviados nesse intervalo */
                                 sent: number;
@@ -3214,6 +3333,26 @@ export interface paths {
                                 bounced: number;
                                 /** @description Emails que falharam nesse intervalo */
                                 failed: number;
+                                /**
+                                 * @description Emails abertos nesse intervalo
+                                 * @default 0
+                                 */
+                                opened: number;
+                                /**
+                                 * @description Emails com cliques nesse intervalo
+                                 * @default 0
+                                 */
+                                clicked: number;
+                                /**
+                                 * @description Emails transacionais no intervalo
+                                 * @default 0
+                                 */
+                                transactional: number;
+                                /**
+                                 * @description Emails de broadcast no intervalo
+                                 * @default 0
+                                 */
+                                broadcast: number;
                             }[];
                         };
                     };
