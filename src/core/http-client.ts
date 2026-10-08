@@ -14,7 +14,7 @@ import type {
   HttpRequestOptions,
 } from "./types.js";
 
-const SDK_VERSION = "0.2.0";
+const SDK_VERSION = "0.2.1";
 const DEFAULT_BASE_URL = "https://api.coffeemail.com.br";
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_LOCALE: CoffeeMailLocale = "pt-BR";
