@@ -26,20 +26,43 @@ const isPresent = (value: unknown): boolean => {
   return true;
 };
 
+const NAMED_EMAIL_PATTERN = /^(?:(?<name>.*?)\s*<)?(?<email>[^<>\s]+)>?$/;
+
+const parseEmailString = (input: string): EmailParticipant => {
+  const trimmed = input.trim();
+  const match = NAMED_EMAIL_PATTERN.exec(trimmed);
+  if (!match) {
+    return { email: trimmed };
+  }
+
+  const email = match.groups?.email?.trim();
+  const rawName = match.groups?.name?.trim();
+  const name = rawName ? rawName.replace(/^["']|["']$/g, '').trim() : undefined;
+
+  if (email && name) {
+    return { email, name };
+  }
+
+  return { email: email ?? trimmed };
+};
+
 const normalizeParticipant = (input: EmailAddressInput): EmailParticipant => {
   if (typeof input === "string") {
-    return { email: input.trim() };
+    return parseEmailString(input);
   }
-  if (
-    input === null ||
-    typeof input !== "object" ||
-    typeof (input as { email?: unknown }).email !== "string"
-  ) {
+
+  const isValidObject =
+    input !== null &&
+    typeof input === "object" &&
+    typeof (input as { email?: unknown }).email === "string";
+
+  if (!isValidObject) {
     throw new ValidationError(
       "Invalid email participant: expected a string email address or an object with an `email` string field.",
       { received: input },
     );
   }
+
   return {
     email: input.email.trim(),
     ...(input.name ? { name: input.name.trim() } : {}),
@@ -189,7 +212,7 @@ export class Emails {
   ): Promise<CoffeeMailResponse<ReadonlyArray<BatchSendEmailResult>>> {
     const formatted = items.map(formatSendBody);
     const batchHeaders = items.reduce<Record<string, string>>(
-      (headers, item) => ({ ...headers, ...formatSendHeaders(item) }),
+      (headers, item) => Object.assign(headers, formatSendHeaders(item)),
       {},
     );
     return this.http.post<ReadonlyArray<BatchSendEmailResult>>(

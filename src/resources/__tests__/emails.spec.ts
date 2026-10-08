@@ -52,6 +52,34 @@ describe("Emails", () => {
     );
   });
 
+  it("deve extrair nome e e-mail quando fornecido no formato RFC 5322 'Nome <email@dominio.com>'", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 202,
+      text: async () => JSON.stringify({ id: "eml_124", status: "queued" }),
+    });
+
+    await emails.send({
+      from: "Empresa do Café <contato@empresa.com.br>",
+      to: "Cliente Especial <cliente@gmail.com>",
+      subject: "Teste com Nome",
+      html: "<p>Olá</p>",
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.coffeemail.com.br/v1/product/emails",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          from: { email: "contato@empresa.com.br", name: "Empresa do Café" },
+          to: [{ email: "cliente@gmail.com", name: "Cliente Especial" }],
+          subject: "Teste com Nome",
+          html: "<p>Olá</p>",
+        }),
+      }),
+    );
+  });
+
   it("deve lidar com cancelamento de e-mail com sucesso", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
