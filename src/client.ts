@@ -4,6 +4,7 @@ import { Broadcasts } from "./resources/broadcasts.js";
 import { Domains } from "./resources/domains.js";
 import { Emails } from "./resources/emails.js";
 import { Stats } from "./resources/stats.js";
+import { Senders } from "./resources/senders.js";
 import { Suppressions } from "./resources/suppressions.js";
 import { Templates } from "./resources/templates.js";
 import { Webhooks } from "./resources/webhooks.js";
@@ -19,6 +20,7 @@ import type { CoffeeMailClientOptions } from "./core/types.js";
  * - `templates`: Gestão de modelos e renderização de prévias.
  * - `audiences`: Listas de contatos e audiências.
  * - `broadcasts`: Campanhas em massa.
+ * - `senders`: Remetentes verificados por endereço.
  * - `suppressions`: Gestão de descadastros e bounces.
  * - `webhooks`: Endpoints de eventos e validação criptográfica de assinatura HMAC.
  * - `stats`: Métricas e taxas de entrega.
@@ -70,6 +72,7 @@ export class CoffeeMail {
   /**
    * Lista de supressão (unsubscribes e bounces).
    */
+  public readonly senders: Senders;
   public readonly suppressions: Suppressions;
 
   /**
@@ -102,6 +105,7 @@ export class CoffeeMail {
     this.templates = new Templates(this.http);
     this.audiences = new Audiences(this.http);
     this.broadcasts = new Broadcasts(this.http);
+    this.senders = new Senders(this.http);
     this.suppressions = new Suppressions(this.http);
     this.webhooks = new Webhooks(this.http);
     this.stats = new Stats(this.http);
