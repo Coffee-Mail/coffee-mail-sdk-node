@@ -646,7 +646,7 @@ export interface paths {
                              * @description Status atual do envio
                              * @enum {string}
                              */
-                            status: "queued" | "processing" | "sent" | "delivered" | "bounced" | "failed" | "skipped" | "scheduled" | "cancelled";
+                            status: "queued" | "processing" | "sent" | "delivered" | "bounced" | "complained" | "failed" | "skipped" | "scheduled" | "cancelled";
                             /** @description Número de tentativas de envio realizadas */
                             attempts: number;
                             /** @description Última mensagem de erro registrada no envio */
@@ -1468,6 +1468,8 @@ export interface paths {
                                 value: string;
                                 /** @description TTL em segundos sugerido para o registro */
                                 ttl?: number;
+                                /** @description Indica se o registro pertence à infraestrutura global da plataforma */
+                                isInfrastructure?: boolean;
                             }[];
                         };
                     };
@@ -1549,6 +1551,8 @@ export interface paths {
                                 value: string;
                                 /** @description TTL em segundos sugerido para o registro */
                                 ttl?: number;
+                                /** @description Indica se o registro pertence à infraestrutura global da plataforma */
+                                isInfrastructure?: boolean;
                             }[];
                         };
                     };
@@ -1685,9 +1689,20 @@ export interface paths {
                                     /** @description Valores encontrados no DNS que bateram com o esperado */
                                     matches: string[];
                                 };
+                                /** @description Resultado da checagem do registro SPF Canônico de infraestrutura */
+                                infrastructureSpf?: {
+                                    /** @description Indica se o registro DNS verificado está correto */
+                                    ok: boolean;
+                                    /** @description Valor esperado para o registro DNS */
+                                    expected: string;
+                                    /** @description Valor do registro DNS encontrado na consulta */
+                                    got: string | null;
+                                    /** @description Valores encontrados no DNS que bateram com o esperado */
+                                    matches: string[];
+                                };
                             };
                             /** @description Checagens obrigatórias para considerar o domínio verificado */
-                            requiredChecks: ("spf" | "dkim" | "dmarc" | "ownership")[];
+                            requiredChecks: ("spf" | "dkim" | "dmarc" | "ownership" | "infrastructureSpf")[];
                         };
                     };
                 };
