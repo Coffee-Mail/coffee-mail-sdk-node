@@ -646,7 +646,7 @@ export interface paths {
                              * @description Status atual do envio
                              * @enum {string}
                              */
-                            status: "queued" | "processing" | "sent" | "delivered" | "bounced" | "failed" | "skipped" | "scheduled" | "cancelled";
+                            status: "queued" | "processing" | "sent" | "delivered" | "bounced" | "complained" | "failed" | "skipped" | "scheduled" | "cancelled";
                             /** @description Número de tentativas de envio realizadas */
                             attempts: number;
                             /** @description Última mensagem de erro registrada no envio */
