@@ -30,6 +30,7 @@ export { Domains } from "./resources/domains.js";
 export { Templates } from "./resources/templates.js";
 export { Audiences, Contacts } from "./resources/audiences.js";
 export { Broadcasts } from "./resources/broadcasts.js";
+export { Senders } from "./resources/senders.js";
 export { Suppressions } from "./resources/suppressions.js";
 export { Webhooks } from "./resources/webhooks.js";
 export { Stats } from "./resources/stats.js";

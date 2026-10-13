@@ -47,4 +47,13 @@ export class Suppressions {
   public async reactivate(id: string): Promise<CoffeeMailResponse<void>> {
     return this.http.post<void>(`/v1/product/suppressions/${id}/reactivate`);
   }
+
+  /**
+   * Cria supressões em lote.
+   */
+  public async bulkCreate(
+    suppressions: ReadonlyArray<Record<string, unknown>>,
+  ): Promise<CoffeeMailResponse<unknown>> {
+    return this.http.post<unknown>("/v1/product/suppressions/bulk", { suppressions });
+  }
 }

@@ -85,6 +85,20 @@ export class Broadcasts {
     );
     return this.remapForbidden(result, "broadcasts.cancel");
   }
+  /**
+   * Dispara um envio de teste da campanha para os destinatários informados.
+   */
+  public async testSend(
+    broadcastId: string,
+    payload: Record<string, unknown>,
+  ): Promise<CoffeeMailResponse<unknown>> {
+    const result = await this.http.post<unknown>(
+      `/v1/product/broadcasts/${encodeURIComponent(broadcastId)}/test-send`,
+      payload,
+    );
+    return this.remapForbidden(result, "broadcasts.testSend");
+  }
+
   private remapForbidden<T>(
     result: CoffeeMailResponse<T>,
     operation: string,
