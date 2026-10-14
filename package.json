@@ -9,7 +9,7 @@
     "sdk"
   ],
   "author": "CoffeeMail",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": false,
   "publishConfig": {
     "access": "public"
