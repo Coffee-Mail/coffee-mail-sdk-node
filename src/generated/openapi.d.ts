@@ -91,7 +91,7 @@ export interface paths {
                     from?: string;
                     /** @description Data/hora final do período de busca */
                     to?: string;
-                    /** @description Cursor de paginação para buscar registros seguintes */
+                    /** @description Cursor de paginação: use o nextCursor da página anterior (uma data ISO legada também é aceita) */
                     after?: string;
                     /** @description Quantidade máxima de e-mails retornados */
                     limit?: number;
