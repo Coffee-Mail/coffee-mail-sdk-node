@@ -31,7 +31,7 @@ O SDK segue as regras de código da CoffeeMail:
 
 ## Compatibilidade
 
-O SDK é usado em produção. Mudanças na API pública devem **adicionar e depreciar**, nunca renomear ou remover. Os SDKs oficiais (Node.js, Python, PHP e Java) mantêm o mesmo contrato: uma funcionalidade nova deve existir em todos.
+O SDK é usado em produção. Mudanças na API pública devem **adicionar e depreciar**, nunca renomear ou remover. Os SDKs oficiais (Node.js, Python, PHP, Java e Go) mantêm o mesmo contrato: uma funcionalidade nova deve existir em todos.
 
 ## Commits e PRs
 

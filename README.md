@@ -493,7 +493,7 @@ A janela de 300 segundos é a mesma usada pelo verificador da API. Guarde o segr
 
 - **SemVer.** Enquanto estiver em `0.x`, novas funcionalidades entram em versões minor/patch.
 - **Compatibilidade retroativa obrigatória.** O pacote está publicado e em uso: mudanças na superfície pública **adicionam e depreciam** (`@deprecated`), nunca renomeiam nem removem. Exemplos já aplicados: `ListTemplatesResponse.data` e `AudienceDetail.contactsCount` continuam existindo como aliases depreciados.
-- **Paridade entre SDKs.** Node.js, Python, PHP e Java expõem o mesmo contrato; funcionalidade nova deve existir em todos (veja [CONTRIBUTING.md](./CONTRIBUTING.md)).
+- **Paridade entre SDKs.** Node.js, Python, PHP, Java e Go expõem o mesmo contrato; funcionalidade nova deve existir em todos (veja [CONTRIBUTING.md](./CONTRIBUTING.md)).
 - **Versão em três lugares.** `package.json`, `SDK_VERSION` (`src/core/http-client.ts`, enviado no `User-Agent`) e `COFFEEMAIL_VERSION` (`src/index.ts`). `pnpm check:version-sync` falha se divergirem.
 - **Publicação.** Bump da versão nos três lugares, commit e push de uma tag `vX.Y.Z`. O workflow [`publish.yml`](./.github/workflows/publish.yml) roda os gates, confere que a tag bate com o `package.json` e publica com `npm publish --provenance --access public` (secret `NPM_TOKEN`). Localmente, `prepublishOnly` executa `check:version-sync`, `check:standards` e `build`.
 - **Changelog.** Não há `CHANGELOG.md` no repositório. O histórico de mudanças está nas [tags](https://github.com/Coffee-Mail/coffee-mail-sdk-node/tags) e no `git log`.
@@ -506,7 +506,7 @@ A janela de 300 segundos é a mesma usada pelo verificador da API. Guarde o segr
 COFFEEMAIL_OPENAPI_SPEC=/caminho/para/product.json pnpm generate:types
 ```
 
-`COFFEEMAIL_OPENAPI_SPEC` aceita caminho local ou URL `http(s)`. O arquivo gerado é versionado, e `src/generated/contract-check.ts` compara em tempo de compilação os tipos públicos escritos à mão com os tipos gerados, então `pnpm typecheck` acusa drift entre SDK e API. Fluxo para mudanças de contrato: spec atualizado → `pnpm generate:types` → ajustar `src/types/` e recursos → espelhar nos SDKs Python, PHP e Java.
+`COFFEEMAIL_OPENAPI_SPEC` aceita caminho local ou URL `http(s)`. O arquivo gerado é versionado, e `src/generated/contract-check.ts` compara em tempo de compilação os tipos públicos escritos à mão com os tipos gerados, então `pnpm typecheck` acusa drift entre SDK e API. Fluxo para mudanças de contrato: spec atualizado → `pnpm generate:types` → ajustar `src/types/` e recursos → espelhar nos SDKs Python, PHP, Java e Go.
 
 ## 🧪 Testes e qualidade
 
@@ -569,6 +569,7 @@ Vulnerabilidades: **não** abra issue pública; siga o [SECURITY.md](./SECURITY.
 | [coffee-mail-sdk-python](https://github.com/Coffee-Mail/coffee-mail-sdk-python) | SDK oficial Python (`coffeemail`) |
 | [coffee-mail-sdk-php](https://github.com/Coffee-Mail/coffee-mail-sdk-php) | SDK oficial PHP (`coffeemail/coffeemail-php`) |
 | [coffee-mail-sdk-java](https://github.com/Coffee-Mail/coffee-mail-sdk-java) | SDK oficial Java (`br.com.coffeemail:coffeemail-java`) |
+| [coffee-mail-sdk-go](https://github.com/Coffee-Mail/coffee-mail-sdk-go) | SDK oficial Go (`github.com/Coffee-Mail/coffee-mail-sdk-go`) |
 | [coffee-mail-laravel](https://github.com/Coffee-Mail/coffee-mail-laravel) | Integração Laravel (`coffeemail/coffeemail-laravel`) |
 | [coffee-mail-sdk-workbench](https://github.com/Coffee-Mail/coffee-mail-sdk-workbench) | Bancada de validação dos SDKs por spec |
 
