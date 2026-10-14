@@ -500,13 +500,13 @@ A janela de 300 segundos é a mesma usada pelo verificador da API. Guarde o segr
 
 ### Tipos gerados do OpenAPI
 
-`src/generated/openapi.d.ts` é gerado por `pnpm generate:types` a partir do spec da API. Por padrão o script lê `../coffee-mail-api/openapi/product.json`, ou seja, **um checkout irmão do repositório [coffee-mail-api](https://github.com/Coffee-Mail/coffee-mail-api) no disco**. Isso é um placeholder deliberado: ainda não existe canal de distribuição do spec entre os repositórios (pacote versionado, URL publicada etc.), então a geração só funciona em ambiente local com os dois repos lado a lado. Para usar outro spec:
+`src/generated/openapi.d.ts` é gerado por `pnpm generate:types` a partir do spec OpenAPI público da API de produto, servido em `https://api.coffeemail.com.br/v1/product/docs/json`. Para usar outro arquivo ou URL:
 
 ```bash
 COFFEEMAIL_OPENAPI_SPEC=/caminho/para/product.json pnpm generate:types
 ```
 
-`COFFEEMAIL_OPENAPI_SPEC` aceita caminho local ou URL `http(s)`. O arquivo gerado é versionado, e `src/generated/contract-check.ts` compara em tempo de compilação os tipos públicos escritos à mão com os tipos gerados, então `pnpm typecheck` acusa drift entre SDK e API. Fluxo para mudanças de contrato: `npm run openapi:export` na api → `pnpm generate:types` aqui → ajustar `src/types/` e recursos → espelhar nos SDKs Python, PHP e Java.
+`COFFEEMAIL_OPENAPI_SPEC` aceita caminho local ou URL `http(s)`. O arquivo gerado é versionado, e `src/generated/contract-check.ts` compara em tempo de compilação os tipos públicos escritos à mão com os tipos gerados, então `pnpm typecheck` acusa drift entre SDK e API. Fluxo para mudanças de contrato: spec atualizado → `pnpm generate:types` → ajustar `src/types/` e recursos → espelhar nos SDKs Python, PHP e Java.
 
 ## 🧪 Testes e qualidade
 
@@ -565,8 +565,6 @@ Vulnerabilidades: **não** abra issue pública; siga o [SECURITY.md](./SECURITY.
 
 | Repositório | Papel |
 | --- | --- |
-| [coffee-mail-api](https://github.com/Coffee-Mail/coffee-mail-api) | Backend: API HTTP, filas, worker de envio, billing |
-| [coffee-mail-web](https://github.com/Coffee-Mail/coffee-mail-web) | Landing, documentação pública e dashboard |
 | **coffee-mail-sdk-node** (você está aqui) | SDK oficial Node.js/TypeScript (`@coffeemail/node`) |
 | [coffee-mail-sdk-python](https://github.com/Coffee-Mail/coffee-mail-sdk-python) | SDK oficial Python (`coffeemail`) |
 | [coffee-mail-sdk-php](https://github.com/Coffee-Mail/coffee-mail-sdk-php) | SDK oficial PHP (`coffeemail/coffeemail-php`) |
