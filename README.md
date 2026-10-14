@@ -1,209 +1,579 @@
 <div align="center">
 
-# @coffeemail/node
+# ☕ CoffeeMail Node.js SDK
 
-**SDK oficial do CoffeeMail para Node.js e TypeScript**
+**SDK oficial do CoffeeMail para Node.js e TypeScript (`@coffeemail/node`): envio transacional, domínios, templates, audiências, campanhas e webhooks com retorno `{ data, error }`.**
 
-[![npm version](https://img.shields.io/npm/v/@coffeemail/node?style=flat-square&color=3178C6)](https://www.npmjs.com/package/@coffeemail/node)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![npm](https://img.shields.io/npm/v/@coffeemail/node?style=flat-square&color=3178C6)](https://www.npmjs.com/package/@coffeemail/node)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
-[![ESM and CJS](https://img.shields.io/badge/Modules-ESM%20%2B%20CJS-orange?style=flat-square)](https://nodejs.org/api/packages.html)
-[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg?style=flat-square)](./LICENSE)
+[![Módulos](https://img.shields.io/badge/m%C3%B3dulos-ESM%20%2B%20CJS-orange?style=flat-square)](https://nodejs.org/api/packages.html)
+[![CI](https://github.com/Coffee-Mail/coffee-mail-sdk-node/actions/workflows/ci.yml/badge.svg)](https://github.com/Coffee-Mail/coffee-mail-sdk-node/actions/workflows/ci.yml)
+[![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-blue.svg?style=flat-square)](./LICENSE)
 
-[Instalação](#-instalação) · [Início Rápido](#-início-rápido) · [Padrão de Resposta](#-retorno-seguro--data-error-) · [Recursos Cobertos](#-recursos-disponíveis) · [Validação de Webhooks](#-validação-criptográfica-de-webhooks)
+[Instalação](#-instalação) · [Início rápido](#-início-rápido) · [Configuração](#️-configuração) · [Erros](#️-tratamento-de-erros) · [Referência](#-referência) · [Webhooks](#-webhooks)
 
 </div>
 
 ---
 
-## ✨ Visão Geral
+## 📑 Sumário
 
-O `@coffeemail/node` é a biblioteca cliente oficial para integração com a API de Produto da **CoffeeMail**. Construído para oferecer uma experiência de desenvolvimento (DX) de primeira linha, o SDK possui:
+- [Visão geral](#-visão-geral)
+- [Status do projeto](#-status-do-projeto)
+- [Requisitos](#-requisitos)
+- [Instalação](#-instalação)
+- [Início rápido](#-início-rápido)
+- [Configuração](#️-configuração)
+- [Tratamento de erros](#️-tratamento-de-erros)
+- [Referência](#-referência)
+- [Webhooks](#-webhooks)
+- [Versionamento e releases](#-versionamento-e-releases)
+- [Testes e qualidade](#-testes-e-qualidade)
+- [Estrutura do repositório](#️-estrutura-do-repositório)
+- [Contribuição](#-contribuição)
+- [Projetos relacionados](#-projetos-relacionados)
+- [Licença](#-licença)
 
-- **Tipagem Estrita de Ponta a Ponta**: Tipos gerados diretamente da especificação OpenAPI da plataforma, sem `any`.
-- **Suporte Dual (ESM e CommonJS)**: Compatível com projetos legados e aplicações modernas.
-- **Padrão de Retorno Seguro `{ data, error }`**: Elimina a necessidade de blocos `try/catch` para erros esperados da API.
-- **Localização em Português do Brasil**: Mensagens de erro e documentação TSDoc formatadas em `pt-BR` por padrão.
-- **Introspecção Dinâmica**: Validação automática de chaves e permissões em cache na memória.
+## ✨ Visão geral
 
----
+`@coffeemail/node` é o cliente da API de Produto do CoffeeMail (rotas `/v1/product/*`). Cada recurso da API vira uma propriedade do client (`emails`, `domains`, `templates`, `audiences`, `broadcasts`, `senders`, `suppressions`, `webhooks`, `stats`), e toda chamada HTTP devolve um envelope `{ data, error }` em vez de lançar exceção.
+
+- **TypeScript estrito**: tipos públicos escritos à mão em `src/types/`, conferidos em tempo de compilação contra os tipos gerados do OpenAPI da API (`src/generated/contract-check.ts`).
+- **ESM e CommonJS**: build dual com `tsup` (`dist/index.js` e `dist/index.cjs`, com `.d.ts`).
+- **Sem dependências de runtime**: usa o `fetch` global e os módulos nativos `node:crypto` e `node:buffer`.
+- **Mensagens localizadas**: erros gerados pelo próprio SDK em `pt-BR` (padrão) ou `en`; o idioma também vai no header `Accept-Language` para a API.
+
+```mermaid
+flowchart LR
+  App[Sua aplicação] --> Client[CoffeeMail]
+  Client --> Res["Recursos<br/>emails, domains, templates…"]
+  Res --> Http["HttpClient<br/>Bearer + timeout + Accept-Language"]
+  Http -->|fetch| API["API CoffeeMail<br/>/v1/product/*"]
+  API --> Http
+  Http -->|"{ data, error }"| App
+```
+
+## 🚦 Status do projeto
+
+| Item | Situação |
+| --- | --- |
+| Versão publicada no npm | `0.2.1` (tag `latest`) |
+| Versão no `package.json` da `main` | `0.2.1` |
+| Maturidade | Pré-1.0 (`0.x`). A superfície pública segue a política de compatibilidade abaixo mesmo assim. |
+
+Limitações conhecidas, verificadas no código atual:
+
+- **`webhooks.verifySignature` não valida entregas reais da API.** O SDK calcula `hex(HMAC-SHA256(secret, body))` e compara com o valor recebido. A API assina `sha256=` + `hex(HMAC-SHA256(secret, "${timestamp}.${idempotencyKey}.${body}"))` e envia os headers `x-webhook-signature`, `x-webhook-timestamp` e `x-webhook-idempotency-key`. Use a verificação manual descrita em [Webhooks](#-webhooks) até a correção ser publicada.
+- **A `main` está à frente do npm sem bump de versão.** `senders`, `broadcasts.testSend`, `suppressions.bulkCreate` e os campos `statusReason`/`sendingIdentity`/`checks.*.resolution` de domínios existem na `main`, mas **não** estão no pacote `0.2.1` publicado. Na referência eles aparecem marcados como _não publicado_.
+- **`senders.*`, `suppressions.bulkCreate` e `broadcasts.testSend` retornam `unknown`** (sem tipo de resposta), embora o OpenAPI da API tenha schema para eles.
+- **`emailType` e `suppressionCategory` são aceitos no tipo de `emails.send()` mas não são enviados** à API; o SDK os descarta em silêncio.
+- **URL base fixa**: as requisições vão sempre para `https://api.coffeemail.com.br`. Não existe opção para apontar para outro host.
+- **Sem retry automático**: o SDK não repete requisições. Em `429`, o valor de `Retry-After` (quando numérico) fica em `RateLimitError.retryAfterSeconds` para você decidir.
+- **`error.code` não reflete o código do servidor** para os status mapeados (400, 401, 402, 403, 404, 409, 429, 5xx): o SDK fixa o código pela classe. `error.details` lê `error.details` da resposta, mas a API publica esses dados em `error.meta`, então `details` chega vazio em erros HTTP.
+- **Agendamento de campanhas não é suportado**: `broadcasts.create` não aceita `scheduledAt` (a API recusa campos desconhecidos).
+- **Runtime**: testado em Node.js. O código importa `node:crypto` e `node:buffer`; outros runtimes (Deno, Bun, edge) não são testados.
+
+## 📋 Requisitos
+
+| Uso | Requisito |
+| --- | --- |
+| Consumir o pacote | Node.js `>=18` (campo `engines`; depende do `fetch` global) |
+| Desenvolver no repositório | Node.js 22 e pnpm `11.26.0` (versões usadas no CI e em `packageManager`) |
+| Credencial | Chave de API de Produto do CoffeeMail (`cm_live_…`), criada no dashboard |
 
 ## 📦 Instalação
 
 ```bash
-# via pnpm (recomendado)
 pnpm add @coffeemail/node
+```
 
-# via npm
+```bash
 npm install @coffeemail/node
+```
 
-# via yarn
+```bash
 yarn add @coffeemail/node
 ```
 
----
+ESM e CommonJS funcionam sem configuração extra:
 
-## 🚀 Início Rápido
+```typescript
+import { CoffeeMail } from "@coffeemail/node";
+```
+
+```javascript
+const { CoffeeMail } = require("@coffeemail/node");
+```
+
+## 🚀 Início rápido
 
 ```typescript
 import { CoffeeMail } from "@coffeemail/node";
 
-// Inicialize informando sua API Key (ou configure COFFEEMAIL_API_KEY no ambiente)
-const coffeemail = new CoffeeMail("cm_live_sua_chave_aqui", {
-  locale: "pt-BR", // 'pt-BR' (padrão) ou 'en'
-});
+const coffeemail = new CoffeeMail(process.env.COFFEEMAIL_API_KEY);
 
-// Envie um e-mail transacional
 const { data, error } = await coffeemail.emails.send({
-  from: "contato@seudominio.com.br",
+  from: "Loja Exemplo <contato@seudominio.com.br>",
   to: "cliente@exemplo.com.br",
-  subject: "Confirmação do Pedido #4521",
-  html: "<h1>Obrigado pela sua compra!</h1><p>Seu pedido está em processamento.</p>",
+  subject: "Confirmação do pedido #4521",
+  html: "<h1>Obrigado pela compra!</h1><p>Seu pedido está em processamento.</p>",
+  idempotencyKey: "pedido-4521-confirmacao",
 });
 
 if (error) {
-  console.error(`Falha no envio [${error.code}]:`, error.message);
-  return;
+  console.error(`[${error.status}] ${error.code}: ${error.message}`);
+  process.exit(1);
 }
 
-console.log("E-mail enfileirado com sucesso! ID:", data.id);
+console.log(data.id, data.status);
 ```
 
----
+`data.status` é `"queued"` ou `"scheduled"`: o envio é enfileirado pela API e processado de forma assíncrona. Acompanhe a entrega com `emails.get(id)`, `emails.getEvents(id)` ou [webhooks](#-webhooks).
 
-## 🛡️ Retorno Seguro `{ data, error }`
+O domínio do remetente precisa estar verificado na sua organização (`domains.create` + `domains.verify`) ou o endereço cadastrado como remetente verificado (`senders`).
 
-Todas as operações retornam um envelope padronizado. As falhas são mapeadas em classes de erro fortemente tipadas:
+## ⚙️ Configuração
 
 ```typescript
-const { data, error } = await coffeemail.emails.get("eml_123456");
-
-if (error) {
-  // Classes: ValidationError, NotFoundError, RateLimitError, AuthenticationError, etc.
-  console.error(`Erro ${error.status} [${error.code}]: ${error.message}`);
-  return;
-}
-
-console.log("Status da mensagem:", data.status); // 'delivered', 'bounced', etc.
+new CoffeeMail(apiKey?: string, options?: CoffeeMailClientOptions)
 ```
 
----
+| Parâmetro | Tipo | Padrão | Descrição |
+| --- | --- | --- | --- |
+| `apiKey` | `string` | `process.env.COFFEEMAIL_API_KEY` | Chave de API de Produto. Enviada como `Authorization: Bearer <apiKey>`. |
+| `options.locale` | `"pt-BR" \| "en"` | `"pt-BR"` | Idioma das mensagens geradas pelo SDK e valor do header `Accept-Language`. |
+| `options.timeoutMs` | `number` | `10000` | Tempo limite por requisição, em milissegundos. Ao estourar, retorna `NetworkError`. |
+| `options.fetch` | `typeof fetch` | `globalThis.fetch` | Implementação de `fetch` customizada (testes, proxy, instrumentação). |
 
-## 📚 Recursos Disponíveis
+| Variável de ambiente | Uso |
+| --- | --- |
+| `COFFEEMAIL_API_KEY` | Lida apenas quando `apiKey` não é passado ao construtor. |
 
-### 1. E-mails (`coffeemail.emails`)
-- `send(payload)` — Envia um e-mail transacional único
-- `sendBatch(items)` — Envia múltiplos e-mails em lote
-- `get(id)` — Consulta detalhes e status de entrega
-- `list(query)` — Consulta histórico com filtros e paginação
-- `getEvents(id)` — Linha do tempo completa de eventos de entrega
-- `cancel(id)` — Cancela o envio de um e-mail agendado
-- `resend(id)` — Reenvia uma mensagem existente
-- `tags(query)` — Lista as tags utilizadas nos envios
+Comportamentos fixos, sem opção de configuração:
 
-### 2. Domínios (`coffeemail.domains`)
-- `create(payload)` — Registra um novo domínio de envio
-- `list()` — Lista todos os domínios da organização
-- `get(id)` — Consulta entradas DNS para configuração (SPF, DKIM, DMARC)
-- `verify(id)` — Dispara verificação ativa dos registros DNS nos servidores de nomes
-- `getHealth(id)` — Diagnóstico de reputação e entregabilidade do domínio
-- `getWarmup(id)` & `updateWarmup(id, payload)` — Gerenciamento do plano de IP warmup
-- `delete(id)` — Remove um domínio cadastrado
+- URL base `https://api.coffeemail.com.br`.
+- Header `User-Agent: coffeemail-node/<versão>`.
+- Sem retry automático.
 
-### 3. Modelos de E-mail (`coffeemail.templates`)
-- `create(payload)` — Cadastra novo modelo (HTML ou React Email TSX)
-- `list(query)` — Lista templates disponíveis
-- `get(id)` & `update(id, payload)` — Consulta e atualiza conteúdo
-- `delete(id)` — Remove template
-- `preview(payload)` — Renderiza prévia com dados dinâmicos em sandbox
-- `format(payload)` — Formata código com Prettier
-- `testRender(payload)` — Renderiza e sanitiza o código
-- `testSend(id, payload)` — Dispara envio real de teste para um destinatário
-
-### 4. Audiências e Contatos (`coffeemail.audiences`)
-- `create(payload)`, `list()`, `get(id)`, `update(id, payload)`, `delete(id)` — Gestão de listas
-- Gestão de contatos por sub-recurso (`coffeemail.audiences.contacts`) ou atalhos:
-  - `audiences.listContacts(audienceId, query)`
-  - `audiences.createContact(audienceId, payload)`
-  - `audiences.bulkAddContacts(audienceId, payload)`
-  - `audiences.deleteContact(audienceId, contactId)`
-
-### 5. Campanhas em Massa (`coffeemail.broadcasts`)
-- `create(payload)` — Cria campanha com agendamento e cabeçalhos RFC 8058
-- `list(query)`, `get(id)`, `update(id, payload)`, `delete(id)` — Gestão de campanhas
-- `send(id)` — Dispara a campanha para toda a audiência
-- `testSend(id, payload)` — Envia uma prévia da campanha para um destinatário de teste
-- `cancel(id)` — Cancela uma campanha agendada
-
-### 6. Supressões (`coffeemail.suppressions`)
-- `create(payload)` — Adiciona endereço à lista de bloqueio
-- `bulkAdd(payload)` — Inclusão de supressões em lote
-- `list(query)` & `get(id)` — Consulta histórico de supressões
-- `delete(id)` — Remove supressão
-- `reactivate(id)` — Reativa e-mail que estava bloqueado por bounce ou descadastro
-
-### 7. Webhooks (`coffeemail.webhooks`)
-- `create(payload)`, `list(query)`, `get(id)`, `update(id, payload)`, `delete(id)` — Gestão de endpoints
-- `toggle(id, payload)` — Pausa ou reativa um webhook
-- `rotateSecret(id)` — Gera nova chave de assinatura HMAC
-- `test(id)` — Envia evento de teste para o endpoint cadastrado
-- `listDeliveries(id, query)` — Histórico de tentativas de entrega e status codes HTTP
-
-### 8. Métricas e Estatísticas (`coffeemail.stats`)
-- `get(query)` — Métricas agregadas por período (taxas de entrega, rejeição, aberturas e cliques)
-
-### 9. Introspecção de Chave de API
-- `coffeemail.introspect(forceRefresh?)` — Retorna dados do proprietário da chave, ambiente (`live` ou `test`) e escopos autorizados
-- `coffeemail.invalidateApiKeyCache()` — Limpa cache local de introspecção
-
----
-
-## 🔒 Validação Criptográfica de Webhooks
-
-Para garantir que os eventos recebidos no seu servidor foram realmente enviados pelo CoffeeMail, utilize o método utilitário `Webhooks.verifySignature`:
+Se nenhuma chave for encontrada (argumento ausente e variável vazia), **o construtor lança** `AuthenticationError`. É a única situação de configuração que lança em vez de retornar envelope.
 
 ```typescript
-import { Webhooks } from "@coffeemail/node";
+import { CoffeeMail } from "@coffeemail/node";
 
-// Exemplo em um endpoint Fastify / Express / Next.js API Route:
-export async function handleWebhook(req, res) {
-  const isValid = Webhooks.verifySignature({
-    payload: req.rawBody, // String ou Buffer original do corpo da requisição
-    signature: req.headers["x-coffeemail-signature"],
-    secret: process.env.COFFEEMAIL_WEBHOOK_SECRET,
-  });
+const coffeemail = new CoffeeMail("cm_live_sua_chave", {
+  locale: "en",
+  timeoutMs: 5_000,
+});
+```
 
-  if (!isValid) {
-    return res.status(401).json({ error: "Assinatura de webhook inválida" });
-  }
+### Introspecção da chave
 
-  // Prosseguir com o processamento do evento...
+| Método | Retorno | Endpoint |
+| --- | --- | --- |
+| `introspect(forceRefresh = false)` | `CoffeeMailResponse<ApiKeyIntrospection>` | `GET /v1/product/auth/me/api-key` |
+| `invalidateApiKeyCache()` | `void` | — |
+
+`ApiKeyIntrospection` traz `id`, `name`, `organisationId` e `scopes`. O resultado de sucesso fica em cache na instância por 5 minutos; `forceRefresh: true` ou `invalidateApiKeyCache()` ignoram o cache.
+
+```typescript
+const { data: key } = await coffeemail.introspect();
+console.log(key?.organisationId, key?.scopes);
+```
+
+## 🛡️ Tratamento de erros
+
+Toda chamada HTTP retorna `CoffeeMailResponse<T>`:
+
+```typescript
+type CoffeeMailResponse<T> =
+  | { readonly data: T; readonly error: null }
+  | { readonly data: null; readonly error: CoffeeMailError };
+```
+
+Falhas de rede, timeout e respostas não-2xx viram `error`; a promise não é rejeitada nesses casos. Exceções que **lançam**:
+
+- `new CoffeeMail()` sem chave: `AuthenticationError` síncrono.
+- `emails.send`/`emails.sendBatch` com participante em formato inválido (objeto sem `email` string): a promise é rejeitada com `ValidationError` antes de qualquer requisição.
+
+```typescript
+import { NotFoundError, RateLimitError } from "@coffeemail/node";
+
+const { data, error } = await coffeemail.emails.get("id-do-email");
+
+if (error instanceof NotFoundError) {
+  console.warn("E-mail não encontrado");
+} else if (error instanceof RateLimitError) {
+  console.warn(`Tente de novo em ${error.retryAfterSeconds ?? "?"}s`);
+} else if (error) {
+  console.error(error.status, error.code, error.message);
+} else {
+  console.log(data.status);
 }
 ```
 
----
+Todas as classes estendem `CoffeeMailError` (`status`, `code`, `message`, `details`) e são exportadas pelo pacote:
 
-## 🛠️ Scripts de Desenvolvimento
+| Classe | `status` | `code` | Quando ocorre |
+| --- | --- | --- | --- |
+| `ValidationError` | 400 | `VALIDATION_ERROR` | Payload ou parâmetros rejeitados pela API; também lançada localmente para participante de e-mail inválido. |
+| `AuthenticationError` | 401 | `UNAUTHORIZED` | Chave inválida, revogada ou ausente (inclusive no construtor). |
+| `PaymentRequiredError` | 402 | `PAYMENT_REQUIRED` | Cota do plano esgotada ou recurso que exige upgrade. |
+| `ForbiddenError` | 403 | `FORBIDDEN` | A chave não tem permissão para a operação. |
+| `PermissionError` | 0 | `PERMISSION_DENIED` | Em `broadcasts.*`, um 403 é convertido nesta classe, com `requiredPermission: "full_access"`. |
+| `NotFoundError` | 404 | `NOT_FOUND` | Recurso inexistente ou de outra organização. |
+| `ConflictError` | 409 | `CONFLICT` | Conflito com recurso existente (ex.: domínio duplicado). |
+| `RateLimitError` | 429 | `RATE_LIMIT_EXCEEDED` | Limite de requisições excedido. `retryAfterSeconds` vem do header `Retry-After` quando numérico. |
+| `InternalServerError` | 500 | `INTERNAL_SERVER_ERROR` | Respostas 500, 502, 503 e 504 (o `status` da instância é sempre 500). |
+| `NetworkError` | 0 | `NETWORK_ERROR` | Falha de rede/DNS ou timeout (`timeoutMs`). |
+| `CoffeeMailError` | status HTTP | código da API ou `API_ERROR` | Qualquer outro status não-2xx. |
+
+A mensagem vem de `error.message` da resposta da API (localizada pelo `Accept-Language`); se a resposta não trouxer mensagem, o SDK usa a sua própria, no `locale` configurado.
+
+## 📚 Referência
+
+Os endpoints abaixo são relativos a `https://api.coffeemail.com.br` e todos os métodos retornam `Promise<CoffeeMailResponse<T>>`, exceto onde indicado. Os recursos também são exportados como classes (`Emails`, `Domains`, `Templates`, `Audiences`, `Contacts`, `Broadcasts`, `Senders`, `Suppressions`, `Webhooks`, `Stats`), além de `COFFEEMAIL_VERSION` e de todos os tipos de payload e resposta.
+
+### Emails — `coffeemail.emails`
+
+| Método | Descrição | Endpoint |
+| --- | --- | --- |
+| `send(payload: SendEmailPayload)` | Enfileira um e-mail transacional. | `POST /v1/product/emails` |
+| `sendBatch(items: SendEmailPayload[])` | Enfileira vários e-mails numa requisição; resultado por item (`{ ok, data }` ou `{ ok, error }`). | `POST /v1/product/emails/batch` |
+| `get(id)` | Detalhe e status de um e-mail. | `GET /v1/product/emails/{id}` |
+| `list(query?: ListEmailsQuery)` | Histórico com filtros e paginação por cursor (`after` / `nextCursor`). | `GET /v1/product/emails` |
+| `getEvents(id)` | Linha do tempo de eventos de entrega. | `GET /v1/product/emails/{id}/events` |
+| `getTags()` | Tags distintas já usadas pela organização. | `GET /v1/product/emails/tags` |
+| `cancel(id)` | Cancela um envio agendado (204, `data` sem corpo). | `POST /v1/product/emails/{id}/cancel` |
+| `resend(id)` | Reenvia um e-mail existente. | `POST /v1/product/emails/{id}/resend` |
+
+Detalhes de `SendEmailPayload`:
+
+- `from`, `to`, `cc`, `bcc` e `replyTo` aceitam `"email@dominio"`, `"Nome <email@dominio>"` ou `{ email, name? }`. `to` é um destinatário único; `cc`/`bcc` aceitam lista.
+- Conteúdo por `html`/`text` ou por `templateId` + `variables`.
+- `scheduledAt` aceita `Date` ou string ISO 8601.
+- `attachments[].content` aceita string (Base64) ou `Uint8Array`/`Buffer` (convertido para Base64). `contentType` padrão `application/octet-stream`, `disposition` padrão `attachment`, `cid` para imagens inline.
+- `tags: { name, value }[]` e `headers: Record<string, string>`.
+- `idempotencyKey` vira o header `x-idempotency-key`; `isSandbox: true` vira `x-coffeemail-sandbox: true` (simula a entrega). Em `sendBatch`, esses headers valem para a requisição inteira.
+
+Filtros de `list`: `status`, `recipient`, `fromEmail`, `subjectContains`, `apiKeyId`, `tag`, `from`, `to`, `after`, `limit`.
+
+```typescript
+const { data } = await coffeemail.emails.list({ status: "delivered", limit: 50 });
+
+for (const email of data?.emails ?? []) {
+  console.log(email.id, email.status);
+}
+
+const next = data?.nextCursor
+  ? await coffeemail.emails.list({ after: data.nextCursor, limit: 50 })
+  : null;
+```
+
+### Domains — `coffeemail.domains`
+
+| Método | Descrição | Endpoint |
+| --- | --- | --- |
+| `create({ name })` | Registra um domínio e retorna os registros DNS a publicar (`dkimRecordsToPublish`). | `POST /v1/product/domains` |
+| `list()` | Lista os domínios da organização. | `GET /v1/product/domains` |
+| `get(id)` | Detalhe do domínio com `dnsRecordsToPublish`. | `GET /v1/product/domains/{id}` |
+| `verify(id)` | Verifica SPF, DKIM e DMARC agora; retorna `status` e `checks`. | `POST /v1/product/domains/{id}/verify` |
+| `delete(id)` | Remove o domínio. | `DELETE /v1/product/domains/{id}` |
+| `getHealth(id)` | Diagnóstico de SPF/DKIM/DMARC em tempo real. | `POST /v1/product/domains/{id}/health` |
+| `getWarmupStatus(id)` | Progresso do aquecimento do domínio (ou `null`). | `GET /v1/product/domains/{id}/warmup` |
+
+_Não publicado (só na `main`)_: os campos opcionais `statusReason` (`dns_records_missing`, `provider_pending`, `provider_failed`), `sendingIdentity` (`provider`, `state`, `lastSyncedAt`) e `checks.*.resolution` (`found`, `absent`, `unknown`).
+
+```typescript
+const { data: domain } = await coffeemail.domains.create({ name: "seudominio.com.br" });
+console.log(domain?.dkimRecordsToPublish);
+
+const { data: check } = await coffeemail.domains.verify(domain!.id);
+console.log(check?.status, check?.checks.dkim.ok);
+```
+
+### Templates — `coffeemail.templates`
+
+| Método | Descrição | Endpoint |
+| --- | --- | --- |
+| `create(payload)` | Cria um template (HTML ou React Email). | `POST /v1/product/templates` |
+| `list(query?: { limit?, after? })` | Lista templates em `templates` (`data` é alias depreciado). | `GET /v1/product/templates` |
+| `get(id)` | Detalhe do template. | `GET /v1/product/templates/{id}` |
+| `update(id, payload)` | Atualização parcial. | `PATCH /v1/product/templates/{id}` |
+| `delete(id)` | Remove o template (204). | `DELETE /v1/product/templates/{id}` |
+| `preview({ html, format?, variables? })` | Renderiza sem persistir e sem sanitizar. | `POST /v1/product/templates/preview` |
+| `previewById(id, variables?)` | Busca o template e renderiza a prévia (duas requisições). | `GET /v1/product/templates/{id}` + `POST /v1/product/templates/preview` |
+| `format(payload)` | Formata o código-fonte com Prettier, sem persistir. | `POST /v1/product/templates/format` |
+| `testRender(payload)` | Renderiza e sanitiza o HTML (remove scripts, iframes, `javascript:` e handlers inline). | `POST /v1/product/templates/test-render` |
+| `testSend(id, { to, variables? })` | Envia um e-mail de teste real com o template. | `POST /v1/product/templates/{id}/test-send` |
+
+```typescript
+const { data: template } = await coffeemail.templates.create({
+  name: "boas-vindas",
+  subject: "Bem-vindo, {{ nome }}!",
+  html: "<h1>Olá, {{ nome }}!</h1>",
+});
+
+const { data: preview } = await coffeemail.templates.previewById(template!.id, { nome: "Ana" });
+console.log(preview?.html);
+```
+
+### Audiences — `coffeemail.audiences`
+
+| Método | Descrição | Endpoint |
+| --- | --- | --- |
+| `create({ name, description? })` | Cria uma audiência. | `POST /v1/product/audiences` |
+| `list(query?: { limit?, offset? })` | Lista audiências (paginação por offset). | `GET /v1/product/audiences` |
+| `get(id)` | Detalhe da audiência (`totalContacts`; `contactsCount` é alias depreciado). | `GET /v1/product/audiences/{id}` |
+| `update(id, { name?, description?, active? })` | Atualiza a audiência. | `PUT /v1/product/audiences/{id}` |
+| `delete(id)` | Remove a audiência e seus contatos (204). | `DELETE /v1/product/audiences/{id}` |
+| `listContacts(audienceId, query?)` | Atalho para `contacts.list`. | `GET /v1/product/audiences/{id}/contacts` |
+| `createContact(audienceId, payload)` | Atalho para `contacts.create`. | `POST /v1/product/audiences/{id}/contacts` |
+| `bulkAddContacts(audienceId, payload)` | Atalho para `contacts.bulkAdd`. | `POST /v1/product/audiences/{id}/contacts/bulk` |
+
+Sub-recurso `coffeemail.audiences.contacts`:
+
+| Método | Descrição | Endpoint |
+| --- | --- | --- |
+| `create(audienceId, { email, firstName?, lastName?, metadata? })` | Adiciona um contato. | `POST /v1/product/audiences/{id}/contacts` |
+| `list(audienceId, query?: { limit?, offset? })` | Lista contatos e `total`. | `GET /v1/product/audiences/{id}/contacts` |
+| `bulkAdd(audienceId, { contacts })` | Adiciona até 10.000 contatos; retorna `inserted`, `skipped` e `errors`. | `POST /v1/product/audiences/{id}/contacts/bulk` |
+| `update(audienceId, contactId, payload)` | Atualiza `firstName`, `lastName`, `metadata`. | `PUT /v1/product/audiences/{id}/contacts/{contactId}` |
+| `delete(audienceId, contactId)` | Remove o contato (204). | `DELETE /v1/product/audiences/{id}/contacts/{contactId}` |
+
+```typescript
+const { data: audience } = await coffeemail.audiences.create({ name: "Newsletter" });
+
+const { data: result } = await coffeemail.audiences.bulkAddContacts(audience!.id, {
+  contacts: [
+    { email: "ana@exemplo.com", firstName: "Ana" },
+    { email: "bruno@exemplo.com" },
+  ],
+});
+console.log(result?.inserted, result?.skipped);
+```
+
+### Broadcasts — `coffeemail.broadcasts`
+
+Exigem chave com permissão `full_access`; um 403 chega como `PermissionError`.
+
+| Método | Descrição | Endpoint |
+| --- | --- | --- |
+| `create(payload)` | Cria a campanha: `audienceId` + `fromEmail` + (`templateId` ou `html` + `subject`), com `text`, `replyTo`, `variables` opcionais. | `POST /v1/product/broadcasts` |
+| `list(query?)` | Lista com filtros `status`, `from`, `to`, `after`, `limit`. | `GET /v1/product/broadcasts` |
+| `get(id)` | Detalhe e contadores (`recipientsTotal`, `recipientsQueued`, `recipientsFailed`). | `GET /v1/product/broadcasts/{id}` |
+| `send(id)` | Dispara a campanha para a audiência. | `POST /v1/product/broadcasts/{id}/send` |
+| `cancel(id)` | Cancela a campanha. | `POST /v1/product/broadcasts/{id}/cancel` |
+| `testSend(id, payload)` — _não publicado_ | Envio de teste para destinatários informados; payload `Record<string, unknown>`, retorno `unknown`. | `POST /v1/product/broadcasts/{id}/test-send` |
+
+```typescript
+const { data: broadcast, error } = await coffeemail.broadcasts.create({
+  audienceId: "id-da-audiencia",
+  fromEmail: "news@seudominio.com.br",
+  templateId: "id-do-template",
+});
+
+if (!error) {
+  await coffeemail.broadcasts.send(broadcast.id);
+}
+```
+
+### Senders — `coffeemail.senders` (_não publicado_)
+
+Remetentes verificados por endereço, alternativa à verificação do domínio inteiro. Todos os métodos retornam `CoffeeMailResponse<unknown>`.
+
+| Método | Descrição | Endpoint |
+| --- | --- | --- |
+| `create({ email, displayName })` | Cadastra o remetente e dispara o e-mail de verificação. | `POST /v1/product/senders` |
+| `list()` | Lista os remetentes da organização. | `GET /v1/product/senders` |
+| `verify(token)` | Confirma a verificação com o token recebido por e-mail. | `POST /v1/product/senders/verify` |
+| `delete(senderId)` | Remove o remetente. | `DELETE /v1/product/senders/{id}` |
+
+```typescript
+await coffeemail.senders.create({ email: "ana@seudominio.com.br", displayName: "Ana" });
+```
+
+### Suppressions — `coffeemail.suppressions`
+
+| Método | Descrição | Endpoint |
+| --- | --- | --- |
+| `list(query?)` | Lista com filtros `status`, `reason`, `source`, `category` e paginação por cursor (`after`, `limit` até 200). | `GET /v1/product/suppressions` |
+| `get(id)` | Detalhe da supressão. | `GET /v1/product/suppressions/{id}` |
+| `create({ email, reason?, expiresAt? })` | Suprime um endereço; `reason` aceita `manual`, `bounce` ou `complaint`. | `POST /v1/product/suppressions` |
+| `delete(id)` | Remove a supressão (204). | `DELETE /v1/product/suppressions/{id}` |
+| `reactivate(id)` | Desfaz a supressão e libera o endereço (204). | `POST /v1/product/suppressions/{id}/reactivate` |
+| `bulkCreate(suppressions)` — _não publicado_ | Cria supressões em lote; retorno `unknown`. | `POST /v1/product/suppressions/bulk` |
+
+```typescript
+await coffeemail.suppressions.create({ email: "nao-envie@exemplo.com", reason: "manual" });
+```
+
+### Webhooks — `coffeemail.webhooks`
+
+| Método | Descrição | Endpoint |
+| --- | --- | --- |
+| `create({ url, events, description? })` | Cadastra o endpoint. O `secret` completo só aparece nesta resposta. | `POST /v1/product/webhooks` |
+| `list(query?: { status? })` | Lista webhooks (sem segredo; `hasSecret`). | `GET /v1/product/webhooks` |
+| `get(id)` | Detalhe (`secret: null`, `secretPreview` para exibição). | `GET /v1/product/webhooks/{id}` |
+| `update(id, { url?, events?, description? })` | Atualiza configuração. | `PUT /v1/product/webhooks/{id}` |
+| `toggle(id, { status: "active" \| "paused" })` | Pausa ou reativa sem alterar o resto. | `PATCH /v1/product/webhooks/{id}` |
+| `delete(id)` | Remove o webhook (204). | `DELETE /v1/product/webhooks/{id}` |
+| `rotateSecret(id)` | Gera novo segredo e invalida o anterior. | `POST /v1/product/webhooks/{id}/rotate-secret` |
+| `listDeliveries(id, query?)` | Tentativas de entrega (filtros `eventType`, `status`, `from`, `to`, `limit`). | `GET /v1/product/webhooks/{id}/deliveries` |
+| `test(id)` | Envia um evento de teste ao endpoint. | `POST /v1/product/webhooks/{id}/test` |
+| `verifySignature(options)` / `Webhooks.verifySignature(options)` | Retorna `boolean` (síncrono). **Incompatível com as entregas reais**, veja [Webhooks](#-webhooks). | — |
+
+Eventos (`WebhookEventType`): `email.queued`, `email.processing`, `email.sent`, `email.delivered`, `email.delivery_delayed`, `email.opened`, `email.clicked`, `email.bounced`, `email.complained`, `email.failed`, `email.suppressed`, `email.scheduled`, `email.cancelled`, `email.unsubscribed`, `billing.plan_changed`.
+
+```typescript
+const { data: webhook } = await coffeemail.webhooks.create({
+  url: "https://minha-api.com.br/webhooks/coffeemail",
+  events: ["email.delivered", "email.bounced"],
+});
+
+console.log(webhook?.secret);
+```
+
+### Stats — `coffeemail.stats`
+
+| Método | Descrição | Endpoint |
+| --- | --- | --- |
+| `get(query?: GetStatsQuery)` | Totais do período e série agrupada (`day`, `week`, `month`). Filtros `domainId`, `tag`, `startDate`, `endDate`, `granularity` ou atalho `period` (`last7d`, `last30d`, `last90d`). | `GET /v1/product/stats` |
+
+```typescript
+const { data: stats } = await coffeemail.stats.get({ period: "last30d", granularity: "week" });
+console.log(stats?.totalDelivered, stats?.data);
+```
+
+## 🔔 Webhooks
+
+Cada entrega da API é um `POST` JSON com estes headers:
+
+| Header | Conteúdo |
+| --- | --- |
+| `x-webhook-signature` | `sha256=` + `hex(HMAC-SHA256(secret, "${timestamp}.${idempotencyKey}.${body}"))` |
+| `x-webhook-timestamp` | Unix timestamp em segundos |
+| `x-webhook-idempotency-key` | Identificador aleatório da tentativa |
+| `x-webhook-test` | Presente apenas em entregas disparadas por `webhooks.test()` |
+
+O verificador `webhooks.verifySignature({ payload, signature, secret })` publicado hoje calcula `hex(HMAC-SHA256(secret, body))`, sem timestamp, sem idempotency key e sem o prefixo `sha256=`. Por isso ele **retorna `false` para entregas reais**. O método continua exportado por compatibilidade; a correção será adicionada sem remover a assinatura atual.
+
+Até lá, verifique manualmente com o corpo bruto da requisição (antes de qualquer parse de JSON):
+
+```typescript
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+const TOLERANCE_SECONDS = 300;
+
+export const verifyCoffeeMailWebhook = (
+  rawBody: string,
+  headers: Record<string, string | undefined>,
+  secret: string,
+): boolean => {
+  const signature = headers["x-webhook-signature"];
+  const timestamp = headers["x-webhook-timestamp"];
+  const idempotencyKey = headers["x-webhook-idempotency-key"];
+  if (!signature || !timestamp || !idempotencyKey) return false;
+
+  const ageSeconds = Math.abs(Math.floor(Date.now() / 1000) - Number(timestamp));
+  if (!Number.isFinite(ageSeconds) || ageSeconds > TOLERANCE_SECONDS) return false;
+
+  const digest = createHmac("sha256", secret)
+    .update(`${timestamp}.${idempotencyKey}.${rawBody}`)
+    .digest("hex");
+  const expected = Buffer.from(`sha256=${digest}`);
+  const received = Buffer.from(signature);
+
+  return expected.length === received.length && timingSafeEqual(expected, received);
+};
+```
+
+A janela de 300 segundos é a mesma usada pelo verificador da API. Guarde o segredo retornado em `webhooks.create()` ou `webhooks.rotateSecret()`; depois disso ele não pode ser recuperado.
+
+## 🔖 Versionamento e releases
+
+- **SemVer.** Enquanto estiver em `0.x`, novas funcionalidades entram em versões minor/patch.
+- **Compatibilidade retroativa obrigatória.** O pacote está publicado e em uso: mudanças na superfície pública **adicionam e depreciam** (`@deprecated`), nunca renomeiam nem removem. Exemplos já aplicados: `ListTemplatesResponse.data` e `AudienceDetail.contactsCount` continuam existindo como aliases depreciados.
+- **Paridade entre SDKs.** Node.js, Python, PHP e Java expõem o mesmo contrato; funcionalidade nova deve existir em todos (veja [CONTRIBUTING.md](./CONTRIBUTING.md)).
+- **Versão em três lugares.** `package.json`, `SDK_VERSION` (`src/core/http-client.ts`, enviado no `User-Agent`) e `COFFEEMAIL_VERSION` (`src/index.ts`). `pnpm check:version-sync` falha se divergirem.
+- **Publicação.** Bump da versão nos três lugares, commit e push de uma tag `vX.Y.Z`. O workflow [`publish.yml`](./.github/workflows/publish.yml) roda os gates, confere que a tag bate com o `package.json` e publica com `npm publish --provenance --access public` (secret `NPM_TOKEN`). Localmente, `prepublishOnly` executa `check:version-sync`, `check:standards` e `build`.
+- **Changelog.** Não há `CHANGELOG.md` no repositório. O histórico de mudanças está nas [tags](https://github.com/Coffee-Mail/coffee-mail-sdk-node/tags) e no `git log`.
+
+### Tipos gerados do OpenAPI
+
+`src/generated/openapi.d.ts` é gerado por `pnpm generate:types` a partir do spec da API. Por padrão o script lê `../coffee-mail-api/openapi/product.json`, ou seja, **um checkout irmão do repositório [coffee-mail-api](https://github.com/Coffee-Mail/coffee-mail-api) no disco**. Isso é um placeholder deliberado: ainda não existe canal de distribuição do spec entre os repositórios (pacote versionado, URL publicada etc.), então a geração só funciona em ambiente local com os dois repos lado a lado. Para usar outro spec:
 
 ```bash
-# Compilar Dual ESM + CommonJS
-pnpm run build
-
-# Executar verificação de tipos
-pnpm run typecheck
-
-# Executar testes automatizados
-pnpm run test
-
-# Regenerar tipos a partir do OpenAPI
-pnpm run generate:types
-
-# Checar conformidade de código e padrões
-pnpm run check:standards
+COFFEEMAIL_OPENAPI_SPEC=/caminho/para/product.json pnpm generate:types
 ```
 
----
+`COFFEEMAIL_OPENAPI_SPEC` aceita caminho local ou URL `http(s)`. O arquivo gerado é versionado, e `src/generated/contract-check.ts` compara em tempo de compilação os tipos públicos escritos à mão com os tipos gerados, então `pnpm typecheck` acusa drift entre SDK e API. Fluxo para mudanças de contrato: `npm run openapi:export` na api → `pnpm generate:types` aqui → ajustar `src/types/` e recursos → espelhar nos SDKs Python, PHP e Java.
+
+## 🧪 Testes e qualidade
+
+```bash
+pnpm install
+pnpm check:version-sync && pnpm check:standards && pnpm typecheck && pnpm test && pnpm build
+```
+
+| Script | O que faz |
+| --- | --- |
+| `pnpm build` | Build dual ESM + CJS com `.d.ts` e sourcemaps (`tsup`) em `dist/`. |
+| `pnpm dev` | `tsup --watch`. |
+| `pnpm typecheck` | `tsc --noEmit` em modo estrito (inclui `exactOptionalPropertyTypes` e `noUncheckedIndexedAccess`) e a checagem de contrato com o OpenAPI. |
+| `pnpm test` | Suíte Vitest (`vitest run`). |
+| `pnpm test:watch` | Vitest em modo watch. |
+| `pnpm check:standards` | Gate de padrões de código da casa (comentários fora de TSDoc, entre outros) em `src/`. |
+| `pnpm check:version-sync` | Confere `SDK_VERSION` e `COFFEEMAIL_VERSION` contra o `package.json`. |
+| `pnpm generate:types` | Regenera `src/generated/openapi.d.ts` a partir do spec da API. |
+| `pnpm release:public` | `npm publish --access public` (prefira o fluxo por tag). |
+
+O CI ([`ci.yml`](./.github/workflows/ci.yml)) roda em push e pull request para `main`, com Node.js 22 e pnpm 11.26.0, na ordem: `check:version-sync` → `check:standards` → `typecheck` → `test` → `build`. Os testes ficam em `__tests__/*.spec.ts` ao lado do código e usam `fetch` simulado, sem rede.
+
+## 🗂️ Estrutura do repositório
+
+```text
+coffee-mail-sdk-node/
+├── src/
+│   ├── index.ts              # exports públicos e COFFEEMAIL_VERSION
+│   ├── client.ts             # classe CoffeeMail
+│   ├── core/
+│   │   ├── http-client.ts    # fetch, headers, timeout, introspecção
+│   │   ├── errors.ts         # CoffeeMailError e subclasses
+│   │   ├── i18n/             # mensagens pt-BR e en
+│   │   └── types.ts          # CoffeeMailResponse, opções do client
+│   ├── resources/            # emails, domains, templates, audiences, broadcasts, senders, suppressions, webhooks, stats
+│   ├── types/                # tipos públicos de payload e resposta por recurso
+│   └── generated/            # openapi.d.ts (gerado) e contract-check.ts
+├── scripts/                  # generate-types, check-version-sync, check-code-standards
+├── specs/                    # DX_EVOLUTION_SPEC.md (spec da evolução 0.2.0)
+├── .github/workflows/        # ci.yml e publish.yml
+└── tsup.config.ts
+```
+
+## 🤝 Contribuição
+
+Leia o [CONTRIBUTING.md](./CONTRIBUTING.md) antes de abrir um PR. Resumo:
+
+- Código em inglês; documentação, issues, commits e PRs em português do Brasil, no formato `tipo(escopo): descrição`.
+- Sem comentários fora do TSDoc da API pública, sem `else`/`switch`, sem textos e números mágicos.
+- Todo comportamento novo vem com testes (caminho feliz e ao menos dois caminhos de erro).
+- Mudanças na API pública: abra uma issue para discussão antes e siga a política de compatibilidade.
+
+Vulnerabilidades: **não** abra issue pública; siga o [SECURITY.md](./SECURITY.md).
+
+## 🔗 Projetos relacionados
+
+| Repositório | Papel |
+| --- | --- |
+| [coffee-mail-api](https://github.com/Coffee-Mail/coffee-mail-api) | Backend: API HTTP, filas, worker de envio, billing |
+| [coffee-mail-web](https://github.com/Coffee-Mail/coffee-mail-web) | Landing, documentação pública e dashboard |
+| **coffee-mail-sdk-node** (você está aqui) | SDK oficial Node.js/TypeScript (`@coffeemail/node`) |
+| [coffee-mail-sdk-python](https://github.com/Coffee-Mail/coffee-mail-sdk-python) | SDK oficial Python (`coffeemail`) |
+| [coffee-mail-sdk-php](https://github.com/Coffee-Mail/coffee-mail-sdk-php) | SDK oficial PHP (`coffeemail/coffeemail-php`) |
+| [coffee-mail-sdk-java](https://github.com/Coffee-Mail/coffee-mail-sdk-java) | SDK oficial Java (`br.com.coffeemail:coffeemail-java`) |
+| [coffee-mail-laravel](https://github.com/Coffee-Mail/coffee-mail-laravel) | Integração Laravel (`coffeemail/coffeemail-laravel`) |
+| [coffee-mail-sdk-workbench](https://github.com/Coffee-Mail/coffee-mail-sdk-workbench) | Bancada de validação dos SDKs por spec |
 
 ## 📄 Licença
 
-Distribuído sob a licença **MIT**. Consulte o arquivo [LICENSE](./LICENSE) para mais detalhes.
+Distribuído sob a licença [MIT](./LICENSE). Copyright (c) 2026 Dev-Etto.
