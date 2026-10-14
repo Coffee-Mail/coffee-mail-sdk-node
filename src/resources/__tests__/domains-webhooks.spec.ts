@@ -173,6 +173,105 @@ describe("Domains & Webhooks", () => {
       );
     });
 
+    it("deve repassar statusReason, sendingIdentity e resolution na verificação", async () => {
+      const dnsCheck = {
+        ok: true,
+        resolution: "found",
+        expected: "v=spf1 include:coffeemail.com.br ~all",
+        got: "v=spf1 include:coffeemail.com.br ~all",
+        matches: ["v=spf1 include:coffeemail.com.br ~all"],
+      };
+      mockFetch.mockResolvedValue(
+        jsonResponse({
+          id: "dom_123",
+          name: "empresa.com.br",
+          status: "pending",
+          statusReason: "provider_pending",
+          sendingIdentity: {
+            provider: "aws_ses",
+            state: "pending",
+            lastSyncedAt: "2026-10-14T12:00:00.000Z",
+          },
+          verifiedAt: null,
+          checks: {
+            spf: dnsCheck,
+            dkim: dnsCheck,
+            dmarc: dnsCheck,
+            ownership: {
+              ...dnsCheck,
+              ok: false,
+              resolution: "unknown",
+              got: null,
+              matches: [],
+            },
+          },
+          requiredChecks: ["spf", "dkim", "dmarc", "ownership"],
+        }),
+      );
+
+      const { data, error } = await domains.verify("dom_123");
+
+      expect(error).toBeNull();
+      expect(data?.status).toBe("pending");
+      expect(data?.statusReason).toBe("provider_pending");
+      expect(data?.sendingIdentity).toEqual({
+        provider: "aws_ses",
+        state: "pending",
+        lastSyncedAt: "2026-10-14T12:00:00.000Z",
+      });
+      expect(data?.checks.spf.resolution).toBe("found");
+      expect(data?.checks.ownership.resolution).toBe("unknown");
+    });
+
+    it("deve repassar statusReason e sendingIdentity nulos ao obter domínio", async () => {
+      mockFetch.mockResolvedValue(
+        jsonResponse({
+          id: "dom_123",
+          name: "empresa.com.br",
+          status: "failed",
+          statusReason: "dns_records_missing",
+          sendingIdentity: null,
+          dkimSelector: "coffeemail",
+          dkimPublicKey: null,
+          verifiedAt: null,
+          lastCheckAt: null,
+          createdAt: "2025-12-01T00:00:00.000Z",
+          dnsRecordsToPublish: [],
+        }),
+      );
+
+      const { data, error } = await domains.get("dom_123");
+
+      expect(error).toBeNull();
+      expect(data?.statusReason).toBe("dns_records_missing");
+      expect(data?.sendingIdentity).toBeNull();
+    });
+
+    it("deve repassar statusReason nos itens da listagem", async () => {
+      mockFetch.mockResolvedValue(
+        jsonResponse({
+          domains: [
+            {
+              id: "dom_123",
+              name: "empresa.com.br",
+              status: "failed",
+              statusReason: "provider_failed",
+              dkimSelector: "coffeemail",
+              dkimPublicKey: "chave_publica",
+              verifiedAt: null,
+              lastCheckAt: "2026-01-01T00:00:00.000Z",
+              createdAt: "2025-12-01T00:00:00.000Z",
+            },
+          ],
+        }),
+      );
+
+      const { data, error } = await domains.list();
+
+      expect(error).toBeNull();
+      expect(data?.domains[0]?.statusReason).toBe("provider_failed");
+    });
+
     it("deve retornar NotFoundError ao obter domínio inexistente", async () => {
       mockFetch.mockResolvedValue(
         jsonResponse(
