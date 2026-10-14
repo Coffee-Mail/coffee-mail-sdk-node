@@ -11,6 +11,22 @@ export interface DomainDnsRecord {
   readonly ttl?: number;
 }
 
+export type DomainStatusReason =
+  | "dns_records_missing"
+  | "provider_pending"
+  | "provider_failed";
+
+export type DomainDnsResolution = "found" | "absent" | "unknown";
+
+/**
+ * Situação do domínio no provedor de envio responsável pela assinatura DKIM.
+ */
+export interface DomainSendingIdentity {
+  readonly provider: "aws_ses" | "none";
+  readonly state: "not_provisioned" | "pending" | "ready" | "failed";
+  readonly lastSyncedAt: string | null;
+}
+
 /**
  * Resumo de um domínio, como retornado por `list()`.
  */
@@ -18,6 +34,7 @@ export interface DomainSummary {
   readonly id: string;
   readonly name: string;
   readonly status: "pending" | "verified" | "failed";
+  readonly statusReason?: DomainStatusReason | null;
   readonly dkimSelector: string;
   readonly dkimPublicKey: string | null;
   readonly verifiedAt: string | null;
@@ -32,6 +49,8 @@ export interface DomainDetail {
   readonly id: string;
   readonly name: string;
   readonly status: "pending" | "verified" | "failed";
+  readonly statusReason?: DomainStatusReason | null;
+  readonly sendingIdentity?: DomainSendingIdentity | null;
   readonly dkimSelector: string;
   readonly dkimPublicKey: string | null;
   readonly verifiedAt: string | null;
@@ -71,6 +90,7 @@ export interface DeleteDomainResponse {
 
 export interface DomainDnsCheck {
   readonly ok: boolean;
+  readonly resolution?: DomainDnsResolution;
   readonly expected: string;
   readonly got: string | null;
   readonly matches: ReadonlyArray<string>;
@@ -80,6 +100,8 @@ export interface VerifyDomainResponse {
   readonly id: string;
   readonly name: string;
   readonly status: "pending" | "verified" | "failed";
+  readonly statusReason?: DomainStatusReason | null;
+  readonly sendingIdentity?: DomainSendingIdentity | null;
   readonly verifiedAt: string | null;
   readonly checks: {
     readonly spf: DomainDnsCheck;

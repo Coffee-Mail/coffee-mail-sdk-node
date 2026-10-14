@@ -614,6 +614,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description ID único do e-mail */
                     id: string;
                 };
                 cookie?: never;
@@ -752,6 +753,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description ID único do e-mail */
                     id: string;
                 };
                 cookie?: never;
@@ -814,6 +816,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description ID único do e-mail */
                     id: string;
                 };
                 cookie?: never;
@@ -851,6 +854,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description ID único do e-mail */
                     id: string;
                 };
                 cookie?: never;
@@ -899,7 +903,10 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Filtra webhooks pelo status (active, paused ou disabled) */
+                    status?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1022,6 +1029,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do webhook */
                     id: string;
                 };
                 cookie?: never;
@@ -1070,6 +1078,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do webhook */
                     id: string;
                 };
                 cookie?: never;
@@ -1134,6 +1143,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do webhook */
                     id: string;
                 };
                 cookie?: never;
@@ -1156,6 +1166,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do webhook */
                     id: string;
                 };
                 cookie?: never;
@@ -1198,6 +1209,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do webhook */
                     id: string;
                 };
                 cookie?: never;
@@ -1256,6 +1268,7 @@ export interface paths {
                 };
                 header?: never;
                 path: {
+                    /** @description Identificador do webhook */
                     id: string;
                 };
                 cookie?: never;
@@ -1336,6 +1349,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do webhook */
                     id: string;
                 };
                 cookie?: never;
@@ -1394,6 +1408,11 @@ export interface paths {
                                  * @enum {string}
                                  */
                                 status: "pending" | "verified" | "failed";
+                                /**
+                                 * @description Motivo do status atual: registros DNS ausentes, provedor de envio ainda confirmando a assinatura ou provedor rejeitou a configuração
+                                 * @enum {string|null}
+                                 */
+                                statusReason: "dns_records_missing" | "provider_pending" | "provider_failed" | null;
                                 /** @description Seletor usado no registro DKIM do domínio */
                                 dkimSelector: string;
                                 /** @description Chave pública DKIM gerada para o domínio */
@@ -1494,6 +1513,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do domínio */
                     id: string;
                 };
                 cookie?: never;
@@ -1519,6 +1539,29 @@ export interface paths {
                              * @enum {string}
                              */
                             status: "pending" | "verified" | "failed";
+                            /**
+                             * @description Motivo do status atual: registros DNS ausentes, provedor de envio ainda confirmando a assinatura ou provedor rejeitou a configuração
+                             * @enum {string|null}
+                             */
+                            statusReason: "dns_records_missing" | "provider_pending" | "provider_failed" | null;
+                            /** @description Situação do domínio no provedor de envio */
+                            sendingIdentity: {
+                                /**
+                                 * @description Provedor de envio responsável pela assinatura DKIM
+                                 * @enum {string}
+                                 */
+                                provider: "aws_ses" | "none";
+                                /**
+                                 * @description Situação da identidade do domínio no provedor de envio
+                                 * @enum {string}
+                                 */
+                                state: "not_provisioned" | "pending" | "ready" | "failed";
+                                /**
+                                 * Format: date-time
+                                 * @description Data e hora da última sincronização com o provedor de envio
+                                 */
+                                lastSyncedAt: string | null;
+                            } | null;
                             /** @description Seletor usado no registro DKIM do domínio */
                             dkimSelector: string;
                             /** @description Chave pública DKIM gerada para o domínio */
@@ -1566,6 +1609,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do domínio */
                     id: string;
                 };
                 cookie?: never;
@@ -1613,6 +1657,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do domínio */
                     id: string;
                 };
                 cookie?: never;
@@ -1639,6 +1684,11 @@ export interface paths {
                              */
                             status: "pending" | "verified" | "failed";
                             /**
+                             * @description Motivo do status atual: registros DNS ausentes, provedor de envio ainda confirmando a assinatura ou provedor rejeitou a configuração
+                             * @enum {string|null}
+                             */
+                            statusReason: "dns_records_missing" | "provider_pending" | "provider_failed" | null;
+                            /**
                              * Format: date-time
                              * @description Data e hora em que o domínio foi verificado com sucesso
                              */
@@ -1649,6 +1699,11 @@ export interface paths {
                                 spf: {
                                     /** @description Indica se o registro DNS verificado está correto */
                                     ok: boolean;
+                                    /**
+                                     * @description Resultado da consulta DNS: registro encontrado, inexistente ou consulta sem resposta
+                                     * @enum {string}
+                                     */
+                                    resolution: "found" | "absent" | "unknown";
                                     /** @description Valor esperado para o registro DNS */
                                     expected: string;
                                     /** @description Valor do registro DNS encontrado na consulta */
@@ -1660,6 +1715,11 @@ export interface paths {
                                 dkim: {
                                     /** @description Indica se o registro DNS verificado está correto */
                                     ok: boolean;
+                                    /**
+                                     * @description Resultado da consulta DNS: registro encontrado, inexistente ou consulta sem resposta
+                                     * @enum {string}
+                                     */
+                                    resolution: "found" | "absent" | "unknown";
                                     /** @description Valor esperado para o registro DNS */
                                     expected: string;
                                     /** @description Valor do registro DNS encontrado na consulta */
@@ -1671,6 +1731,11 @@ export interface paths {
                                 dmarc: {
                                     /** @description Indica se o registro DNS verificado está correto */
                                     ok: boolean;
+                                    /**
+                                     * @description Resultado da consulta DNS: registro encontrado, inexistente ou consulta sem resposta
+                                     * @enum {string}
+                                     */
+                                    resolution: "found" | "absent" | "unknown";
                                     /** @description Valor esperado para o registro DNS */
                                     expected: string;
                                     /** @description Valor do registro DNS encontrado na consulta */
@@ -1682,6 +1747,11 @@ export interface paths {
                                 ownership: {
                                     /** @description Indica se o registro DNS verificado está correto */
                                     ok: boolean;
+                                    /**
+                                     * @description Resultado da consulta DNS: registro encontrado, inexistente ou consulta sem resposta
+                                     * @enum {string}
+                                     */
+                                    resolution: "found" | "absent" | "unknown";
                                     /** @description Valor esperado para o registro DNS */
                                     expected: string;
                                     /** @description Valor do registro DNS encontrado na consulta */
@@ -1693,6 +1763,11 @@ export interface paths {
                                 infrastructureSpf?: {
                                     /** @description Indica se o registro DNS verificado está correto */
                                     ok: boolean;
+                                    /**
+                                     * @description Resultado da consulta DNS: registro encontrado, inexistente ou consulta sem resposta
+                                     * @enum {string}
+                                     */
+                                    resolution: "found" | "absent" | "unknown";
                                     /** @description Valor esperado para o registro DNS */
                                     expected: string;
                                     /** @description Valor do registro DNS encontrado na consulta */
@@ -1703,6 +1778,24 @@ export interface paths {
                             };
                             /** @description Checagens obrigatórias para considerar o domínio verificado */
                             requiredChecks: ("spf" | "dkim" | "dmarc" | "ownership" | "infrastructureSpf")[];
+                            /** @description Situação do domínio no provedor de envio */
+                            sendingIdentity: {
+                                /**
+                                 * @description Provedor de envio responsável pela assinatura DKIM
+                                 * @enum {string}
+                                 */
+                                provider: "aws_ses" | "none";
+                                /**
+                                 * @description Situação da identidade do domínio no provedor de envio
+                                 * @enum {string}
+                                 */
+                                state: "not_provisioned" | "pending" | "ready" | "failed";
+                                /**
+                                 * Format: date-time
+                                 * @description Data e hora da última sincronização com o provedor de envio
+                                 */
+                                lastSyncedAt: string | null;
+                            } | null;
                         };
                     };
                 };
@@ -1728,6 +1821,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do domínio */
                     id: string;
                 };
                 cookie?: never;
@@ -1808,6 +1902,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do domínio */
                     id: string;
                 };
                 cookie?: never;
@@ -2078,6 +2173,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador único da supressão */
                     id: string;
                 };
                 cookie?: never;
@@ -2137,6 +2233,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador único da supressão */
                     id: string;
                 };
                 cookie?: never;
@@ -2171,6 +2268,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador único da supressão */
                     id: string;
                 };
                 cookie?: never;
@@ -2406,7 +2504,12 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Quantidade máxima de itens retornados */
+                    limit?: string;
+                    /** @description Quantidade de itens a pular */
+                    offset?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -2495,6 +2598,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador da audiência */
                     id: string;
                 };
                 cookie?: never;
@@ -2515,6 +2619,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador da audiência */
                     id: string;
                 };
                 cookie?: never;
@@ -2547,6 +2652,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador da audiência */
                     id: string;
                 };
                 cookie?: never;
@@ -2576,9 +2682,15 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Quantidade máxima de itens retornados */
+                    limit?: string;
+                    /** @description Quantidade de itens a pular */
+                    offset?: string;
+                };
                 header?: never;
                 path: {
+                    /** @description Identificador da audiência */
                     id: string;
                 };
                 cookie?: never;
@@ -2628,6 +2740,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador da audiência */
                     id: string;
                 };
                 cookie?: never;
@@ -2705,6 +2818,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador da audiência */
                     id: string;
                 };
                 cookie?: never;
@@ -2775,7 +2889,9 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador da audiência */
                     id: string;
+                    /** @description Identificador do contato */
                     contactId: string;
                 };
                 cookie?: never;
@@ -2810,7 +2926,9 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador da audiência */
                     id: string;
+                    /** @description Identificador do contato */
                     contactId: string;
                 };
                 cookie?: never;
@@ -3062,6 +3180,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do broadcast */
                     id: string;
                 };
                 cookie?: never;
@@ -3099,6 +3218,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do broadcast */
                     id: string;
                 };
                 cookie?: never;
@@ -3134,6 +3254,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do broadcast */
                     id: string;
                 };
                 cookie?: never;
@@ -3198,6 +3319,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador do broadcast */
                     id: string;
                 };
                 cookie?: never;
@@ -3622,6 +3744,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador ou alias do template */
                     id: string;
                 };
                 cookie?: never;
@@ -3709,6 +3832,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador ou alias do template */
                     id: string;
                 };
                 cookie?: never;
@@ -3733,6 +3857,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador ou alias do template */
                     id: string;
                 };
                 cookie?: never;
@@ -4060,6 +4185,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Identificador ou alias do template */
                     id: string;
                 };
                 cookie?: never;
