@@ -2,6 +2,8 @@ import type { HttpClient } from "../core/http-client.js";
 import { toQueryParams } from "../core/query.js";
 import type { CoffeeMailResponse } from "../core/types.js";
 import type {
+  BulkCreateSuppressionInput,
+  BulkCreateSuppressionsResult,
   CreateSuppressionPayload,
   ListSuppressionsQuery,
   ListSuppressionsResponse,
@@ -52,8 +54,8 @@ export class Suppressions {
    * Cria supressões em lote.
    */
   public async bulkCreate(
-    suppressions: ReadonlyArray<Record<string, unknown>>,
-  ): Promise<CoffeeMailResponse<unknown>> {
-    return this.http.post<unknown>("/v1/product/suppressions/bulk", { suppressions });
+    suppressions: ReadonlyArray<BulkCreateSuppressionInput>,
+  ): Promise<CoffeeMailResponse<BulkCreateSuppressionsResult>> {
+    return this.http.post<BulkCreateSuppressionsResult>("/v1/product/suppressions/bulk", { suppressions });
   }
 }

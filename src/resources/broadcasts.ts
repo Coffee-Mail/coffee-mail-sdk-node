@@ -11,9 +11,16 @@ import type {
   ListBroadcastsQuery,
   ListBroadcastsResponse,
   SendBroadcastResult,
+  TestSendBroadcastPayload,
+  TestSendBroadcastResult,
 } from "../types/broadcasts.types.js";
 
 const REQUIRES_FULL_ACCESS = "full_access";
+
+const toRecord = (value: unknown): Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 
 const CREATE_BROADCAST_WIRE_KEYS: ReadonlyArray<CreateBroadcastWireBodyKey> = [
   "audienceId",
@@ -85,14 +92,15 @@ export class Broadcasts {
     );
     return this.remapForbidden(result, "broadcasts.cancel");
   }
+
   /**
-   * Dispara um envio de teste da campanha para os destinatários informados.
+   * Dispara um envio de teste da campanha para um destinatário.
    */
   public async testSend(
     broadcastId: string,
-    payload: Record<string, unknown>,
-  ): Promise<CoffeeMailResponse<unknown>> {
-    const result = await this.http.post<unknown>(
+    payload: TestSendBroadcastPayload,
+  ): Promise<CoffeeMailResponse<TestSendBroadcastResult>> {
+    const result = await this.http.post<TestSendBroadcastResult>(
       `/v1/product/broadcasts/${encodeURIComponent(broadcastId)}/test-send`,
       payload,
     );
@@ -112,7 +120,8 @@ export class Broadcasts {
           requiredPermission: `${REQUIRES_FULL_ACCESS} (called by ${operation})`,
         }),
         REQUIRES_FULL_ACCESS,
-        { operation, details: result.error.details },
+        { ...toRecord(result.error.details), operation },
+        { apiCode: result.error.apiCode, requestId: result.error.requestId },
       ),
     };
   }

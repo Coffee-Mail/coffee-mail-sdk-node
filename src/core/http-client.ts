@@ -14,7 +14,8 @@ import type {
   HttpRequestOptions,
 } from "./types.js";
 
-const SDK_VERSION = "0.2.1";
+const SDK_VERSION = "0.3.0";
+const REQUEST_ID_HEADER = "x-request-id";
 const DEFAULT_BASE_URL = "https://api.coffeemail.com.br";
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_LOCALE: CoffeeMailLocale = "pt-BR";
@@ -128,11 +129,12 @@ export class HttpClient {
           retryAfterHeader !== null && /^\d+$/.test(retryAfterHeader)
             ? Number(retryAfterHeader)
             : undefined;
+        const requestId = response.headers?.get(REQUEST_ID_HEADER) ?? undefined;
         const error = createErrorFromResponse(
           response.status,
           responsePayload,
           this.locale,
-          retryAfterSeconds,
+          { retryAfterSeconds, requestId: requestId || undefined },
         );
         return { data: null, error };
       }

@@ -65,3 +65,18 @@ export interface CreateSuppressionPayload {
   readonly reason?: "manual" | "bounce" | "complaint";
   readonly expiresAt?: string;
 }
+
+/**
+ * Item de `bulkCreate()`.
+ */
+export interface BulkCreateSuppressionInput {
+  readonly email: string;
+  readonly reason?: "manual" | "bounce" | "complaint";
+}
+
+/**
+ * Resultado de `bulkCreate()`.
+ */
+export interface BulkCreateSuppressionsResult {
+  readonly insertedCount: number;
+}

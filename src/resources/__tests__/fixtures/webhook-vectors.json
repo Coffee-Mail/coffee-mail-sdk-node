@@ -1,0 +1,126 @@
+{
+  "source": "assinador de webhooks da API CoffeeMail",
+  "vectors": [
+    {
+      "name": "valid_ascii",
+      "secret": "whsec_ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "body": "{\"type\":\"email.delivered\",\"data\":{\"id\":\"eml_123\",\"to\":\"cliente@gmail.com\"}}",
+      "timestamp": "1760000000",
+      "idempotencyKey": "ed4e7012eb856296",
+      "signature": "sha256=08a8d777a32e9421e006cdac650ca468eb51e875356b5c7ca420cfc27a4c07dc",
+      "nowEpochSeconds": 1760000000,
+      "toleranceSeconds": 300,
+      "expected": true
+    },
+    {
+      "name": "valid_unicode",
+      "secret": "whsec_ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "body": "{\"type\":\"email.bounced\",\"data\":{\"reason\":\"Caixa de correio indisponível ☕ — tente amanhã\"}}",
+      "timestamp": "1760000000",
+      "idempotencyKey": "92b60cdd1a4e537e",
+      "signature": "sha256=4bba7b059330a7cb1eb2b4198b00a0368a3a837f27df73e03e065d1f83cca5bd",
+      "nowEpochSeconds": 1760000000,
+      "toleranceSeconds": 300,
+      "expected": true
+    },
+    {
+      "name": "valid_at_past_tolerance_edge",
+      "secret": "whsec_ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "body": "{\"type\":\"email.delivered\",\"data\":{\"id\":\"eml_123\",\"to\":\"cliente@gmail.com\"}}",
+      "timestamp": "1759999700",
+      "idempotencyKey": "3b106008206f6376",
+      "signature": "sha256=25089c899e1c073c5c4610aa04ebb8068298a12266dd4ebda76a80a6258f0a6f",
+      "nowEpochSeconds": 1760000000,
+      "toleranceSeconds": 300,
+      "expected": true
+    },
+    {
+      "name": "valid_at_future_tolerance_edge",
+      "secret": "whsec_ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "body": "{\"type\":\"email.delivered\",\"data\":{\"id\":\"eml_123\",\"to\":\"cliente@gmail.com\"}}",
+      "timestamp": "1760000300",
+      "idempotencyKey": "37f89ec8832cb7ec",
+      "signature": "sha256=45dacf4d349420ea88f6af818330f15ff6e1925704ef68d86d9dec5c5764013d",
+      "nowEpochSeconds": 1760000000,
+      "toleranceSeconds": 300,
+      "expected": true
+    },
+    {
+      "name": "tampered_body",
+      "secret": "whsec_ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "body": "{\"type\":\"email.delivered\",\"data\":{\"id\":\"eml_123\",\"to\":\"cliente@gmail.com\"}} ",
+      "timestamp": "1760000000",
+      "idempotencyKey": "2b17801daa596c87",
+      "signature": "sha256=13b900ef6447f878a7a4c1f54866a682e412f33aefa2bc6f316e61b10df1f7cb",
+      "nowEpochSeconds": 1760000000,
+      "toleranceSeconds": 300,
+      "expected": false
+    },
+    {
+      "name": "expired_timestamp",
+      "secret": "whsec_ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "body": "{\"type\":\"email.delivered\",\"data\":{\"id\":\"eml_123\",\"to\":\"cliente@gmail.com\"}}",
+      "timestamp": "1759999699",
+      "idempotencyKey": "c440c0a43db6b275",
+      "signature": "sha256=c971fcbfdb52b1e29f44da0f4d8cd16e50e87cfb4c31f20c68c1136ddbfccdc1",
+      "nowEpochSeconds": 1760000000,
+      "toleranceSeconds": 300,
+      "expected": false
+    },
+    {
+      "name": "future_timestamp",
+      "secret": "whsec_ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "body": "{\"type\":\"email.delivered\",\"data\":{\"id\":\"eml_123\",\"to\":\"cliente@gmail.com\"}}",
+      "timestamp": "1760000301",
+      "idempotencyKey": "b71c64f5dad8b30b",
+      "signature": "sha256=a9dfeffe492b942171efe56cb1198995b51430c9fa97c70026ff4c590ceb81b2",
+      "nowEpochSeconds": 1760000000,
+      "toleranceSeconds": 300,
+      "expected": false
+    },
+    {
+      "name": "wrong_secret",
+      "secret": "whsec_ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "body": "{\"type\":\"email.delivered\",\"data\":{\"id\":\"eml_123\",\"to\":\"cliente@gmail.com\"}}",
+      "timestamp": "1760000000",
+      "idempotencyKey": "8d6966cf29d0e209",
+      "signature": "sha256=589a300ed0d882cf28ae76427189f31d874a826cd4cec717489cb9add65e363b",
+      "nowEpochSeconds": 1760000000,
+      "toleranceSeconds": 300,
+      "expected": false
+    },
+    {
+      "name": "missing_prefix",
+      "secret": "whsec_ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "body": "{\"type\":\"email.delivered\",\"data\":{\"id\":\"eml_123\",\"to\":\"cliente@gmail.com\"}}",
+      "timestamp": "1760000000",
+      "idempotencyKey": "0c617302efbb1bed",
+      "signature": "03d44a11e5c16f3acad366f11f4e66d8b564f93d9227d4fac4ae4eb90d50fdb4",
+      "nowEpochSeconds": 1760000000,
+      "toleranceSeconds": 300,
+      "expected": false
+    },
+    {
+      "name": "uppercase_hex",
+      "secret": "whsec_ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "body": "{\"type\":\"email.delivered\",\"data\":{\"id\":\"eml_123\",\"to\":\"cliente@gmail.com\"}}",
+      "timestamp": "1760000000",
+      "idempotencyKey": "fc8673677bf9b77e",
+      "signature": "sha256=3CB756965D0E6F15331EE956191BC2C253CFFC24E479EBE1B626440BF982983E",
+      "nowEpochSeconds": 1760000000,
+      "toleranceSeconds": 300,
+      "expected": false
+    },
+    {
+      "name": "non_numeric_timestamp",
+      "secret": "whsec_ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12ab12",
+      "body": "{\"type\":\"email.delivered\",\"data\":{\"id\":\"eml_123\",\"to\":\"cliente@gmail.com\"}}",
+      "timestamp": "agora",
+      "idempotencyKey": "f7c6e2c6c3d5fbaf",
+      "signature": "sha256=cae96f941acab8a7ddcc301c514aebdea737ac7449b42114678497f161ed626d",
+      "nowEpochSeconds": 1760000000,
+      "toleranceSeconds": 300,
+      "expected": false
+    }
+  ]
+}

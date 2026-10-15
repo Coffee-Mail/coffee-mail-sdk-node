@@ -22,11 +22,22 @@
  */
 import type { paths } from "./openapi.js";
 import type { AudienceDetail } from "../types/audiences.types.js";
-import type { BroadcastDetail } from "../types/broadcasts.types.js";
+import type {
+  BroadcastDetail,
+  TestSendBroadcastResult,
+} from "../types/broadcasts.types.js";
 import type { DomainDetail } from "../types/domains.types.js";
 import type { EmailDetail } from "../types/emails.types.js";
 import type { StatsResponse } from "../types/stats.types.js";
-import type { SuppressionDetail } from "../types/suppressions.types.js";
+import type {
+  BulkCreateSuppressionsResult,
+  SuppressionDetail,
+} from "../types/suppressions.types.js";
+import type {
+  CreatedSenderDetail,
+  ListSendersResponse,
+  VerifySenderResult,
+} from "../types/senders.types.js";
 import type { TemplateDetail } from "../types/templates.types.js";
 import type { WebhookDetail } from "../types/webhooks.types.js";
 
@@ -65,6 +76,31 @@ export type _CheckSuppressionDetail = Assert<
 >;
 export type _CheckStatsResponse = Assert<
   Extends<Json200<"/v1/product/stats", "get">, StatsResponse>
+>;
+
+type Json201<
+  Path extends keyof paths,
+  Method extends keyof paths[Path],
+> = paths[Path][Method] extends {
+  responses: { 201: { content: { "application/json": infer R } } };
+}
+  ? R
+  : never;
+
+export type _CheckCreatedSender = Assert<
+  Extends<Json201<"/v1/product/senders", "post">, CreatedSenderDetail>
+>;
+export type _CheckListSenders = Assert<
+  Extends<Json200<"/v1/product/senders", "get">, ListSendersResponse>
+>;
+export type _CheckVerifySender = Assert<
+  Extends<Json200<"/v1/product/senders/verify", "post">, VerifySenderResult>
+>;
+export type _CheckBulkCreateSuppressions = Assert<
+  Extends<Json200<"/v1/product/suppressions/bulk", "post">, BulkCreateSuppressionsResult>
+>;
+export type _CheckTestSendBroadcast = Assert<
+  Extends<Json200<"/v1/product/broadcasts/{id}/test-send", "post">, TestSendBroadcastResult>
 >;
 
 type JsonRequestBody<

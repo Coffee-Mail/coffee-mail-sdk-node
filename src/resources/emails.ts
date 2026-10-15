@@ -132,6 +132,9 @@ const PAYLOAD_ENTRIES: ReadonlyArray<PayloadEntry> = [
     map: (v) => (v as ReadonlyArray<EmailAttachment>).map(serializeAttachment),
   },
   { source: "tags", target: "tags" },
+  { source: "emailType", target: "emailType" },
+  { source: "suppressionCategory", target: "suppressionCategory" },
+  { source: "metadata", target: "metadata" },
 ];
 
 const formatSendBody = (payload: SendEmailPayload): Record<string, unknown> => {

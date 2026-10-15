@@ -75,3 +75,20 @@ export type CreateBroadcastPayload =
       readonly replyTo?: string;
       readonly variables?: Record<string, unknown>;
     };
+
+/**
+ * Parâmetros de `testSend()`: o destinatário do teste e variáveis opcionais.
+ */
+export interface TestSendBroadcastPayload {
+  readonly to: string;
+  readonly variables?: Record<string, unknown>;
+}
+
+/**
+ * Resultado de `testSend()`.
+ */
+export interface TestSendBroadcastResult {
+  readonly success: boolean;
+  readonly messageId: string;
+  readonly recipient: string;
+}

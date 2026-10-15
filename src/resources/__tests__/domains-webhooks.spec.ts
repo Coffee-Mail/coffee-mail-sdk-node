@@ -1,4 +1,3 @@
-import { createHmac } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpClient } from "../../core/http-client.js";
@@ -340,33 +339,6 @@ describe("Domains & Webhooks", () => {
   });
 
   describe("Webhooks", () => {
-    const secret = "whsec_meu_segredo_super_seguro";
-    const payload = JSON.stringify({ event: "email.delivered", id: "eml_123" });
-
-    it("deve validar assinatura HMAC-SHA256 válida corretamente", () => {
-      const validSignature = createHmac("sha256", secret)
-        .update(payload)
-        .digest("hex");
-
-      const isValid = webhooks.verifySignature({
-        payload,
-        signature: validSignature,
-        secret,
-      });
-
-      expect(isValid).toBe(true);
-    });
-
-    it("deve rejeitar assinatura HMAC-SHA256 incorreta", () => {
-      const isValid = webhooks.verifySignature({
-        payload,
-        signature: "assinatura_adulterada_ou_falsa",
-        secret,
-      });
-
-      expect(isValid).toBe(false);
-    });
-
     it("deve criar um webhook com URL e método POST corretos", async () => {
       mockFetch.mockResolvedValue(
         jsonResponse({

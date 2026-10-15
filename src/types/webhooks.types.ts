@@ -148,26 +148,74 @@ export interface ListWebhookDeliveriesQuery {
 }
 
 /**
- * Parâmetros para validação de assinatura criptográfica de webhook.
+ * Headers de uma entrega de webhook. Aceita o objeto de headers do Node
+ * (`IncomingHttpHeaders`, chaves minúsculas) ou um `Headers` da Fetch API.
  */
-export interface VerifyWebhookSignatureOptions {
+export type WebhookRequestHeaders =
+  | { readonly get: (name: string) => string | null }
+  | Readonly<Record<string, string | ReadonlyArray<string> | undefined>>;
+
+/**
+ * Campos comuns às duas formas de verificar uma entrega.
+ */
+export interface VerifyWebhookSignatureBase {
   /**
-   * Corpo bruto da requisição HTTP (string ou Uint8Array).
-   * Não passe o JSON já parseado para evitar alterações em espaços ou formatação.
+   * Corpo bruto da requisição HTTP (string ou Uint8Array), exatamente como
+   * recebido. Nunca passe o JSON já parseado e re-serializado.
    *
-   * `Buffer` (Node) também é aceito em runtime pois estende `Uint8Array`,
-   * mas o tipo público propositalmente não cita `Buffer` para não vazar
-   * tipos do Node no `.d.ts` consumido por runtimes que não têm `Buffer`.
+   * `Buffer` (Node) também é aceito em runtime pois estende `Uint8Array`.
    *
    * @see BinaryData
    */
   readonly payload: BinaryData;
   /**
-   * Valor recebido no cabeçalho HTTP `X-CoffeeMail-Signature` ou `x-coffeemail-signature`.
+   * Segredo do webhook (`whsec_...`), devolvido em `create()` e `rotateSecret()`.
+   */
+  readonly secret: string;
+  /**
+   * Janela aceita entre o `x-webhook-timestamp` e o relógio local, em segundos.
+   * @default 300
+   */
+  readonly toleranceSeconds?: number;
+  /**
+   * Relógio usado na checagem da janela, em milissegundos desde a época Unix.
+   * Útil em testes.
+   * @default Date.now
+   */
+  readonly now?: () => number;
+}
+
+/**
+ * Verificação a partir dos headers da requisição recebida.
+ */
+export interface VerifyWebhookSignatureFromHeaders
+  extends VerifyWebhookSignatureBase {
+  readonly headers: WebhookRequestHeaders;
+}
+
+/**
+ * Verificação a partir dos valores dos headers já extraídos.
+ */
+export interface VerifyWebhookSignatureFromValues
+  extends VerifyWebhookSignatureBase {
+  /**
+   * Valor do header `x-webhook-signature` (`sha256=<hex>`).
    */
   readonly signature: string;
   /**
-   * Segredo configurado no cadastro do webhook (chave secreta).
+   * Valor do header `x-webhook-timestamp` (segundos Unix).
    */
-  readonly secret: string;
+  readonly timestamp: string;
+  /**
+   * Valor do header `x-webhook-idempotency-key`.
+   */
+  readonly idempotencyKey: string;
 }
+
+/**
+ * Parâmetros de `verifySignature()`: os headers da requisição ou os valores
+ * de assinatura, timestamp e chave de idempotência.
+ */
+export type VerifyWebhookSignatureOptions =
+  | VerifyWebhookSignatureFromHeaders
+  | VerifyWebhookSignatureFromValues;

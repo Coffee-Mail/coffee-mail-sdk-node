@@ -1,4 +1,4 @@
-export const COFFEEMAIL_VERSION = "0.2.1";
+export const COFFEEMAIL_VERSION = "0.3.0";
 
 export { CoffeeMail } from "./client.js";
 
@@ -15,6 +15,8 @@ export {
   InternalServerError,
   PermissionError,
 } from "./core/errors.js";
+
+export type { CoffeeMailErrorContext } from "./core/errors.js";
 
 export type {
   ApiKeyIntrospection,
@@ -114,7 +116,17 @@ export type {
   SendBroadcastResult,
   CancelBroadcastResult,
   CreateBroadcastPayload,
+  TestSendBroadcastPayload,
+  TestSendBroadcastResult,
 } from "./types/broadcasts.types.js";
+
+export type {
+  CreateSenderPayload,
+  SenderDetail,
+  CreatedSenderDetail,
+  ListSendersResponse,
+  VerifySenderResult,
+} from "./types/senders.types.js";
 
 export type {
   SuppressionReason,
@@ -124,6 +136,8 @@ export type {
   ListSuppressionsQuery,
   ListSuppressionsResponse,
   CreateSuppressionPayload,
+  BulkCreateSuppressionInput,
+  BulkCreateSuppressionsResult,
 } from "./types/suppressions.types.js";
 
 export type {
@@ -146,6 +160,10 @@ export type {
   ListWebhookDeliveriesResponse,
   ListWebhookDeliveriesQuery,
   VerifyWebhookSignatureOptions,
+  VerifyWebhookSignatureBase,
+  VerifyWebhookSignatureFromHeaders,
+  VerifyWebhookSignatureFromValues,
+  WebhookRequestHeaders,
 } from "./types/webhooks.types.js";
 
 export type {

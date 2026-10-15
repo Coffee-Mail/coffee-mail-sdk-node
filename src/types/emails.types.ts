@@ -166,6 +166,11 @@ export interface SendEmailPayload {
   readonly suppressionCategory?: string;
 
   /**
+   * Metadados livres guardados com o e-mail (não são enviados ao destinatário).
+   */
+  readonly metadata?: Record<string, unknown>;
+
+  /**
    * Se verdadeiro, o e-mail não é entregue de fato, simulando entrega para testes (sandbox).
    */
   readonly isSandbox?: boolean;

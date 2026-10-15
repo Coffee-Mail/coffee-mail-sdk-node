@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import type { HttpClient } from "../core/http-client.js";
 import { toQueryParams } from "../core/query.js";
-import type { CoffeeMailResponse } from "../core/types.js";
+import type { BinaryData, CoffeeMailResponse } from "../core/types.js";
 import type {
   CreateWebhookPayload,
   CreatedWebhookDetail,
@@ -17,14 +17,82 @@ import type {
   UpdateWebhookPayload,
   VerifyWebhookSignatureOptions,
   WebhookDetail,
+  WebhookRequestHeaders,
 } from "../types/webhooks.types.js";
 
-type WebhookRawPayload = VerifyWebhookSignatureOptions["payload"];
+const SIGNATURE_HEADER = "x-webhook-signature";
+const TIMESTAMP_HEADER = "x-webhook-timestamp";
+const IDEMPOTENCY_KEY_HEADER = "x-webhook-idempotency-key";
+const SIGNATURE_PREFIX = "sha256=";
+const SEPARATOR = ".";
+const DEFAULT_TOLERANCE_SECONDS = 300;
+const MILLISECONDS_PER_SECOND = 1000;
+const UNIX_SECONDS = /^-?\d{1,18}$/;
 
-const toRawBodyString = (payload: WebhookRawPayload): string => {
-  if (typeof payload === "string") return payload;
-  if (Buffer.isBuffer(payload)) return payload.toString("utf-8");
-  return new TextDecoder("utf-8").decode(payload);
+interface SignedDelivery {
+  readonly signature: string;
+  readonly timestamp: string;
+  readonly idempotencyKey: string;
+}
+
+const firstValue = (value: unknown): string => {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value) && typeof value[0] === "string") return value[0];
+  return "";
+};
+
+const readHeader = (headers: WebhookRequestHeaders, name: string): string => {
+  if (typeof headers.get === "function") {
+    return headers.get(name) ?? "";
+  }
+  const entries = Object.entries(headers as Record<string, unknown>);
+  const match = entries.find(([key]) => key.toLowerCase() === name);
+  return firstValue(match?.[1]);
+};
+
+const signedDelivery = (options: VerifyWebhookSignatureOptions): SignedDelivery => {
+  if ("headers" in options) {
+    return {
+      signature: readHeader(options.headers, SIGNATURE_HEADER),
+      timestamp: readHeader(options.headers, TIMESTAMP_HEADER),
+      idempotencyKey: readHeader(options.headers, IDEMPOTENCY_KEY_HEADER),
+    };
+  }
+  return {
+    signature: options.signature,
+    timestamp: options.timestamp,
+    idempotencyKey: options.idempotencyKey,
+  };
+};
+
+const isFilled = (value: unknown): value is string =>
+  typeof value === "string" && value.length > 0;
+
+const hasPayload = (payload: unknown): payload is BinaryData =>
+  isFilled(payload) || payload instanceof Uint8Array;
+
+const withinTolerance = (
+  timestamp: string,
+  toleranceSeconds: number,
+  now: () => number,
+): boolean => {
+  if (!UNIX_SECONDS.test(timestamp)) return false;
+  const nowSeconds = Math.floor(now() / MILLISECONDS_PER_SECOND);
+  return Math.abs(nowSeconds - Number(timestamp)) <= toleranceSeconds;
+};
+
+const sign = (secret: string, delivery: SignedDelivery, payload: BinaryData): string =>
+  SIGNATURE_PREFIX +
+  createHmac("sha256", secret)
+    .update(delivery.timestamp + SEPARATOR + delivery.idempotencyKey + SEPARATOR)
+    .update(payload)
+    .digest("hex");
+
+const constantTimeEquals = (expected: string, received: string): boolean => {
+  const expectedBuffer = Buffer.from(expected, "utf-8");
+  const receivedBuffer = Buffer.from(received, "utf-8");
+  if (expectedBuffer.length !== receivedBuffer.length) return false;
+  return timingSafeEqual(expectedBuffer, receivedBuffer);
 };
 
 /**
@@ -41,8 +109,8 @@ export class Webhooks {
    * const { data, error } = await coffeemail.webhooks.create({
    *   url: 'https://minha-api.com.br/api/webhooks/coffeemail',
    *   events: ['email.delivered', 'email.bounced'],
-   *   secret: 'whsec_meu_segredo'
    * });
+   * // Guarde data.secret: ele só é devolvido nesta resposta.
    * ```
    */
   public async create(
@@ -181,16 +249,20 @@ export class Webhooks {
   }
 
   /**
-   * Valida a autenticidade de um webhook recebido no seu servidor via assinatura HMAC SHA-256.
-   * Protege contra requisições forjadas e ataques de temporização (timing attacks).
+   * Valida a autenticidade de uma entrega de webhook.
+   *
+   * A assinatura (`x-webhook-signature`) é `sha256=` seguido do HMAC-SHA256 em
+   * hexadecimal de `timestamp + "." + idempotencyKey + "." + corpoBruto`,
+   * comparada em tempo constante. Entregas com `x-webhook-timestamp` fora da
+   * janela de tolerância (padrão 300s) são rejeitadas para impedir replay.
    *
    * @example
    * ```typescript
-   * // Em uma rota Next.js / Express / Fastify:
+   * // Express, com express.raw({ type: 'application/json' }):
    * const isValid = coffeemail.webhooks.verifySignature({
-   *   payload: rawBody,
-   *   signature: req.headers['x-coffeemail-signature'],
-   *   secret: 'whsec_seu_segredo',
+   *   payload: req.body,
+   *   headers: req.headers,
+   *   secret: process.env.COFFEEMAIL_WEBHOOK_SECRET!,
    * });
    *
    * if (!isValid) {
@@ -203,31 +275,24 @@ export class Webhooks {
   }
 
   /**
-   * Método estático auxiliar para validação de assinatura sem necessidade de instanciar o cliente.
+   * Mesma verificação de `verifySignature()`, sem instanciar o cliente.
    */
   public static verifySignature(
     options: VerifyWebhookSignatureOptions,
   ): boolean {
-    try {
-      const { payload, signature, secret } = options;
-      if (!signature || !secret || !payload) return false;
+    const delivery = signedDelivery(options);
+    const complete =
+      hasPayload(options.payload) &&
+      isFilled(options.secret) &&
+      isFilled(delivery.signature) &&
+      isFilled(delivery.timestamp) &&
+      isFilled(delivery.idempotencyKey);
+    if (!complete) return false;
 
-      const rawString = toRawBodyString(payload);
-
-      const computed = createHmac("sha256", secret)
-        .update(rawString)
-        .digest("hex");
-
-      const expectedBuffer = Buffer.from(computed, "utf-8");
-      const receivedBuffer = Buffer.from(signature, "utf-8");
-
-      if (expectedBuffer.length !== receivedBuffer.length) {
-        return false;
-      }
-
-      return timingSafeEqual(expectedBuffer, receivedBuffer);
-    } catch {
+    const tolerance = options.toleranceSeconds ?? DEFAULT_TOLERANCE_SECONDS;
+    if (!withinTolerance(delivery.timestamp, tolerance, options.now ?? Date.now)) {
       return false;
     }
+    return constantTimeEquals(sign(options.secret, delivery, options.payload), delivery.signature);
   }
 }
