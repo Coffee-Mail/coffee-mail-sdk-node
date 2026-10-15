@@ -57,7 +57,7 @@ describe("operações corrigidas na 0.3.0", () => {
 
   it("senders devolvem os tipos do contrato", async () => {
     mockFetch
-      .mockResolvedValueOnce(jsonResponse({ id: "s1", email: "a@b.com", displayName: null, verificationToken: "t", verifiedAt: null, active: true, createdAt: "2026-10-14T12:00:00Z" }, 201))
+      .mockResolvedValueOnce(jsonResponse({ id: "s1", email: "a@b.com", displayName: null, verifiedAt: null, active: true, createdAt: "2026-10-14T12:00:00Z" }, 201))
       .mockResolvedValueOnce(jsonResponse({ senders: [] }))
       .mockResolvedValueOnce(jsonResponse({ id: "s1", email: "a@b.com" }));
     const senders = new Senders(client);
@@ -66,9 +66,59 @@ describe("operações corrigidas na 0.3.0", () => {
     const listed = await senders.list();
     const verified = await senders.verify("6f1c2a7e-3b4d-4e5f-8a9b-0c1d2e3f4a5b");
 
-    expect(created.data?.verificationToken).toBe("t");
+    expect(created.data?.id).toBe("s1");
+    expect(created.data?.verificationToken).toBeUndefined();
     expect(listed.data?.senders).toEqual([]);
     expect(verified.data?.email).toBe("a@b.com");
+  });
+
+  it("senders.resendVerification chama a rota de reenvio e devolve erro tipado em 409", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, status: 204, text: async () => "" });
+    const senders = new Senders(client);
+
+    const resent = await senders.resendVerification("s1");
+
+    expect(resent.error).toBeNull();
+    expect(String(mockFetch.mock.calls.at(-1)?.[0])).toContain(
+      "/v1/product/senders/s1/resend-verification",
+    );
+
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({ error: { code: "CONFLICT", message: "sender is already verified" } }, 409),
+    );
+    const conflicted = await senders.resendVerification("s1");
+    expect(conflicted.error?.code).toBe("CONFLICT");
+
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({ error: { code: "NOT_FOUND", message: "sender" } }, 404),
+    );
+    const missing = await senders.resendVerification("desconhecido");
+    expect(missing.error?.code).toBe("NOT_FOUND");
+  });
+
+  it("broadcasts.create envia scheduledAt e o detalhe expõe metrics", async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({ id: "b1", status: "scheduled", scheduledAt: "2030-01-01T10:00:00.000Z" }, 201),
+    );
+    const broadcasts = new Broadcasts(client);
+
+    await broadcasts.create({
+      audienceId: "a1",
+      fromEmail: "news@acme.com",
+      templateId: "tpl-1",
+      scheduledAt: "2030-01-01T10:00:00.000Z",
+    });
+    expect(sentBody(mockFetch)).toMatchObject({ scheduledAt: "2030-01-01T10:00:00.000Z" });
+
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        id: "b1",
+        status: "sent",
+        metrics: { delivered: 9, opened: 4, clicked: 1, bounced: 1, failed: 0, suppressed: 2 },
+      }),
+    );
+    const detail = await broadcasts.get("b1");
+    expect(detail.data?.metrics?.delivered).toBe(9);
   });
 
   it("suppressions.bulkCreate envia o envelope e devolve insertedCount", async () => {

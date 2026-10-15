@@ -1615,7 +1615,7 @@ export interface paths {
                 cookie?: never;
             };
             /** @description Reautenticação exigida para confirmar a exclusão do domínio */
-            requestBody: {
+            requestBody?: {
                 content: {
                     "application/json": {
                         /**
@@ -2365,7 +2365,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Remetente recém-criado, aguardando verificação */
+                /** @description Remetente recém-criado, aguardando verificação pelo link enviado ao endereço cadastrado */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -2381,8 +2381,6 @@ export interface paths {
                             email: string;
                             /** @description Nome de exibição do remetente */
                             displayName: string | null;
-                            /** @description Token enviado ao email para confirmar a verificação */
-                            verificationToken: string;
                             /**
                              * Format: date-time
                              * @description Data/hora em que o remetente foi verificado
@@ -2451,6 +2449,41 @@ export interface paths {
                             email: string;
                         };
                     };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/product/senders/{id}/resend-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
             };
         };
@@ -2721,6 +2754,8 @@ export interface paths {
                                 metadata: {
                                     [key: string]: unknown;
                                 };
+                                /** @description Indica se o contato ainda recebe broadcasts (false após descadastro) */
+                                subscribed: boolean;
                                 /**
                                  * Format: date-time
                                  * @description Data de criação do contato
@@ -2788,6 +2823,8 @@ export interface paths {
                             metadata: {
                                 [key: string]: unknown;
                             };
+                            /** @description Indica se o contato ainda recebe broadcasts (false após descadastro) */
+                            subscribed: boolean;
                             /**
                              * Format: date-time
                              * @description Data de criação do contato
@@ -3008,8 +3045,11 @@ export interface paths {
                                 fromEmail: string;
                                 /** @description Endereço de e-mail para respostas */
                                 replyTo: string | null;
-                                /** @description Status atual do broadcast */
-                                status: string;
+                                /**
+                                 * @description Status atual do broadcast
+                                 * @enum {string}
+                                 */
+                                status: "draft" | "scheduled" | "sending" | "sent" | "failed" | "cancelled";
                                 /**
                                  * Format: date-time
                                  * @description Data e hora agendadas para o envio
@@ -3086,6 +3126,11 @@ export interface paths {
                          * @description Endereço de e-mail para respostas
                          */
                         replyTo?: string;
+                        /**
+                         * Format: date-time
+                         * @description Data e hora futuras para envio agendado (ISO 8601)
+                         */
+                        scheduledAt?: string;
                         /** @description Variáveis usadas na personalização do template */
                         variables?: {
                             [key: string]: unknown;
@@ -3124,8 +3169,11 @@ export interface paths {
                             fromEmail: string;
                             /** @description Endereço de e-mail para respostas */
                             replyTo: string | null;
-                            /** @description Status atual do broadcast */
-                            status: string;
+                            /**
+                             * @description Status atual do broadcast
+                             * @enum {string}
+                             */
+                            status: "draft" | "scheduled" | "sending" | "sent" | "failed" | "cancelled";
                             /**
                              * Format: date-time
                              * @description Data e hora agendadas para o envio
@@ -3187,12 +3235,89 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Default Response */
+                /** @description Dados de um broadcast com métricas de entrega */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            /**
+                             * Format: uuid
+                             * @description Identificador único do broadcast
+                             */
+                            id: string;
+                            /**
+                             * Format: uuid
+                             * @description Identificador da audiência destinatária
+                             */
+                            audienceId: string;
+                            /** @description Nome da audiência destinatária */
+                            audienceName: string | null;
+                            /**
+                             * Format: uuid
+                             * @description Identificador do template usado no envio
+                             */
+                            templateId: string | null;
+                            /** @description Assunto do e-mail */
+                            subject: string;
+                            /** @description Endereço de e-mail do remetente */
+                            fromEmail: string;
+                            /** @description Endereço de e-mail para respostas */
+                            replyTo: string | null;
+                            /**
+                             * @description Status atual do broadcast
+                             * @enum {string}
+                             */
+                            status: "draft" | "scheduled" | "sending" | "sent" | "failed" | "cancelled";
+                            /**
+                             * Format: date-time
+                             * @description Data e hora agendadas para o envio
+                             */
+                            scheduledAt: string | null;
+                            /**
+                             * Format: date-time
+                             * @description Data e hora em que o envio foi concluído
+                             */
+                            sentAt: string | null;
+                            /**
+                             * Format: date-time
+                             * @description Data e hora em que o broadcast foi cancelado
+                             */
+                            cancelledAt: string | null;
+                            /** @description Total de destinatários do broadcast */
+                            recipientsTotal: number;
+                            /** @description Quantidade de destinatários enfileirados para envio */
+                            recipientsQueued: number;
+                            /** @description Quantidade de destinatários com falha no envio */
+                            recipientsFailed: number;
+                            /**
+                             * Format: date-time
+                             * @description Data de criação do broadcast
+                             */
+                            createdAt: string;
+                            /**
+                             * Format: date-time
+                             * @description Data da última atualização do broadcast
+                             */
+                            updatedAt: string;
+                            /** @description Métricas agregadas de entrega do broadcast */
+                            metrics?: {
+                                /** @description Emails entregues */
+                                delivered: number;
+                                /** @description Emails abertos ao menos uma vez */
+                                opened: number;
+                                /** @description Emails com ao menos um clique */
+                                clicked: number;
+                                /** @description Emails devolvidos (bounce) */
+                                bounced: number;
+                                /** @description Emails com falha definitiva */
+                                failed: number;
+                                /** @description Destinatários pulados por supressão */
+                                suppressed: number;
+                            };
+                        };
+                    };
                 };
             };
         };
@@ -3338,8 +3463,11 @@ export interface paths {
                              * @description Identificador único do broadcast
                              */
                             id: string;
-                            /** @description Status atual do broadcast após o cancelamento */
-                            status: string;
+                            /**
+                             * @description Status atual do broadcast após o cancelamento
+                             * @enum {string}
+                             */
+                            status: "draft" | "scheduled" | "sending" | "sent" | "failed" | "cancelled";
                             /**
                              * Format: date-time
                              * @description Data e hora em que o broadcast foi cancelado

@@ -76,20 +76,38 @@ describe("Broadcasts", () => {
       });
     });
 
-    it("não envia campos fora do contrato, como o agendamento ainda inexistente", async () => {
+    it("não envia campos fora do contrato", async () => {
       mockOkThen(broadcastDetail);
 
       await broadcasts.create({
         audienceId: "aud_123",
         fromEmail: "contato@empresa.com.br",
         templateId: "tpl_123",
-        scheduledAt: new Date("2026-10-01T12:00:00.000Z"),
+        campoInventado: "x",
       } as unknown as CreateBroadcastPayload);
 
       expect(sentBody()).toEqual({
         audienceId: "aud_123",
         fromEmail: "contato@empresa.com.br",
         templateId: "tpl_123",
+      });
+    });
+
+    it("envia scheduledAt para agendar a campanha", async () => {
+      mockOkThen({ ...broadcastDetail, status: "scheduled" });
+
+      await broadcasts.create({
+        audienceId: "aud_123",
+        fromEmail: "contato@empresa.com.br",
+        templateId: "tpl_123",
+        scheduledAt: "2030-10-01T12:00:00.000Z",
+      });
+
+      expect(sentBody()).toEqual({
+        audienceId: "aud_123",
+        fromEmail: "contato@empresa.com.br",
+        templateId: "tpl_123",
+        scheduledAt: "2030-10-01T12:00:00.000Z",
       });
     });
 

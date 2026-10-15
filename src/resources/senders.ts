@@ -37,6 +37,16 @@ export class Senders {
   }
 
   /**
+   * Reenvia o e-mail de verificação com um token novo (o anterior expira).
+   * Não retorna corpo na resposta.
+   */
+  public async resendVerification(senderId: string): Promise<CoffeeMailResponse<void>> {
+    return this.http.post<void>(
+      `/v1/product/senders/${encodeURIComponent(senderId)}/resend-verification`,
+    );
+  }
+
+  /**
    * Remove um remetente verificado. Não retorna corpo na resposta.
    */
   public async delete(senderId: string): Promise<CoffeeMailResponse<void>> {

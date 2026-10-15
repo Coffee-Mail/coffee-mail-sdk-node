@@ -19,8 +19,21 @@ export interface BroadcastDetail {
   readonly recipientsTotal: number;
   readonly recipientsQueued: number;
   readonly recipientsFailed: number;
+  readonly metrics?: BroadcastMetrics;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+/**
+ * Métricas agregadas de entrega, presentes em `broadcasts.get()`.
+ */
+export interface BroadcastMetrics {
+  readonly delivered: number;
+  readonly opened: number;
+  readonly clicked: number;
+  readonly bounced: number;
+  readonly failed: number;
+  readonly suppressed: number;
 }
 
 export interface ListBroadcastsResponse {
@@ -54,8 +67,8 @@ export interface CancelBroadcastResult {
  * `templateId` ou `html` (a API rejeita ambos ou nenhum). `subject` é
  * obrigatório apenas quando `html` é usado (templates já têm assunto padrão).
  *
- * O envio agendado ainda não está disponível: a API recusa campos
- * desconhecidos, então não há como agendar uma campanha por aqui.
+ * `scheduledAt` (ISO 8601, no futuro) agenda o envio: a campanha nasce
+ * `scheduled` e é disparada automaticamente no horário.
  */
 export type CreateBroadcastPayload =
   | {
@@ -64,6 +77,7 @@ export type CreateBroadcastPayload =
       readonly templateId: string;
       readonly subject?: string;
       readonly replyTo?: string;
+      readonly scheduledAt?: string;
       readonly variables?: Record<string, unknown>;
     }
   | {
@@ -73,6 +87,7 @@ export type CreateBroadcastPayload =
       readonly subject: string;
       readonly text?: string;
       readonly replyTo?: string;
+      readonly scheduledAt?: string;
       readonly variables?: Record<string, unknown>;
     };
 

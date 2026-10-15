@@ -8,7 +8,7 @@
  *   node scripts/generate-types.mjs
  *   COFFEEMAIL_OPENAPI_SPEC=./product.json node scripts/generate-types.mjs
  */
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,7 +22,9 @@ const OUTPUT_PATH = resolve(__dirname, '../src/generated/openapi.d.ts');
 
 const main = async () => {
   const specArg = process.env.COFFEEMAIL_OPENAPI_SPEC || DEFAULT_SPEC_URL;
-  const input = /^https?:\/\//.test(specArg) ? new URL(specArg) : resolve(specArg);
+  const input = /^https?:\/\//.test(specArg)
+    ? new URL(specArg)
+    : readFileSync(resolve(specArg), 'utf8');
 
   const ast = await openapiTS(input);
   const output = astToString(ast);
