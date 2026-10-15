@@ -26,7 +26,13 @@ import type {
   BroadcastDetail,
   TestSendBroadcastResult,
 } from "../types/broadcasts.types.js";
-import type { DomainDetail } from "../types/domains.types.js";
+import type {
+  DomainCustomHostStatus,
+  DomainDetail,
+  DomainDkimRotation,
+  DomainWarmupStatus,
+  SetTrackingDomainPayload,
+} from "../types/domains.types.js";
 import type { EmailDetail } from "../types/emails.types.js";
 import type { StatsResponse } from "../types/stats.types.js";
 import type {
@@ -58,6 +64,21 @@ export type _CheckEmailDetail = Assert<
 >;
 export type _CheckDomainDetail = Assert<
   Extends<Json200<"/v1/product/domains/{id}", "get">, DomainDetail>
+>;
+export type _CheckDomainWarmupStatus = Assert<
+  Extends<Json200<"/v1/product/domains/{id}/warmup", "get">, DomainWarmupStatus | null>
+>;
+export type _CheckDomainDkimRotation = Assert<
+  Extends<Json200<"/v1/product/domains/{id}/dkim/rotate", "post">, DomainDkimRotation>
+>;
+export type _CheckSetTrackingDomain = Assert<
+  Extends<Json200<"/v1/product/domains/{id}/tracking-domain", "put">, DomainCustomHostStatus>
+>;
+export type _CheckRemoveTrackingDomain = Assert<
+  Extends<
+    Json200<"/v1/product/domains/{id}/tracking-domain", "delete">,
+    DomainCustomHostStatus | null
+  >
 >;
 export type _CheckTemplateDetail = Assert<
   Extends<Json200<"/v1/product/templates/{id}", "get">, TemplateDetail>
@@ -113,6 +134,13 @@ type JsonRequestBody<
   : never;
 
 export type SendEmailWireBodyKey = keyof JsonRequestBody<"/v1/product/emails", "post">;
+
+export type _CheckSetTrackingDomainBody = Assert<
+  Extends<
+    keyof SetTrackingDomainPayload,
+    keyof JsonRequestBody<"/v1/product/domains/{id}/tracking-domain", "put">
+  >
+>;
 
 export type CreateBroadcastWireBodyKey = keyof JsonRequestBody<
   "/v1/product/broadcasts",

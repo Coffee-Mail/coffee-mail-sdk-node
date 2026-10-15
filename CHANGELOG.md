@@ -10,6 +10,11 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 - `broadcasts.get()` expõe `metrics` (entregues, abertos, cliques, bounces, falhas e suprimidos); tipo `BroadcastMetrics` exportado.
 - `senders.resendVerification(id)` reenvia o e-mail de verificação com um token novo.
 - `ContactDetail.subscribed`: `false` quando o contato se descadastrou dos broadcasts.
+- `domains.rotateDkim(id)` inicia a rotação da chave DKIM (idempotente) e devolve `DomainDkimRotation` (`domainId`, `selector`, `startedAt`, `record`). Domínio não verificado responde `ConflictError` com `apiCode` `DOMAIN_NOT_VERIFIED`.
+- `domains.setTrackingDomain(id, { host })` e `domains.removeTrackingDomain(id)` cadastram e removem o host de tracking próprio; respondem `DomainCustomHostStatus` (`host`, `target`, `verified`, `verifiedAt`, `record`). Erros: `ValidationError` (`INVALID_TRACKING_HOST`) e `ConflictError` (`TRACKING_DOMAINS_DISABLED`).
+- `domains.get()` expõe `dkimRotation`, `returnPath`, `trackingDomain` e `trackingDomainsAvailable`.
+- `domains.getWarmupStatus()` expõe `status` (`warming` | `completed`), `totalDays`, `startedAt` e `completedAt`.
+- `DomainDnsRecord.isInfrastructure`. Tipos `DomainDkimRotation`, `DomainCustomHostStatus`, `DomainWarmupState` e `SetTrackingDomainPayload` exportados e conferidos em tempo de compilação contra o OpenAPI da API.
 
 ### Alterado
 

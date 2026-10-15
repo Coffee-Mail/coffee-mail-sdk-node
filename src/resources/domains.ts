@@ -4,10 +4,13 @@ import type {
   CreateDomainPayload,
   CreateDomainResponse,
   DeleteDomainResponse,
+  DomainCustomHostStatus,
   DomainDetail,
+  DomainDkimRotation,
   DomainHealthResponse,
   DomainWarmupStatus,
   ListDomainsResponse,
+  SetTrackingDomainPayload,
   VerifyDomainResponse,
 } from "../types/domains.types.js";
 
@@ -136,6 +139,73 @@ export class Domains {
   ): Promise<CoffeeMailResponse<DomainWarmupStatus | null>> {
     return this.http.get<DomainWarmupStatus | null>(
       `/v1/product/domains/${id}/warmup`,
+    );
+  }
+
+  /**
+   * Inicia a rotação da chave DKIM do domínio. Idempotente: se já houver uma
+   * rotação pendente, devolve a mesma. A chave em uso só muda depois que o
+   * registro TXT de `record` for publicado e encontrado no DNS.
+   *
+   * Retorna `NotFoundError` para domínio inexistente e `ConflictError`
+   * (`apiCode` `DOMAIN_NOT_VERIFIED`) quando o domínio ainda não foi verificado.
+   *
+   * @example
+   * ```typescript
+   * const { data, error } = await coffeemail.domains.rotateDkim('dom_123');
+   * if (data) {
+   *   console.log('Publique o registro:', data.record);
+   * }
+   * ```
+   */
+  public async rotateDkim(
+    id: string,
+  ): Promise<CoffeeMailResponse<DomainDkimRotation>> {
+    return this.http.post<DomainDkimRotation>(
+      `/v1/product/domains/${id}/dkim/rotate`,
+    );
+  }
+
+  /**
+   * Cadastra (ou troca) o host de tracking próprio do domínio, usado nos links
+   * de abertura e clique. O host passa a valer depois que o CNAME de `record`
+   * apontar para `target`.
+   *
+   * Retorna `ValidationError` (`apiCode` `INVALID_TRACKING_HOST`) para host
+   * inválido, `ConflictError` (`apiCode` `TRACKING_DOMAINS_DISABLED`) quando o
+   * recurso está desligado na plataforma e `NotFoundError` para domínio inexistente.
+   *
+   * @example
+   * ```typescript
+   * const { data, error } = await coffeemail.domains.setTrackingDomain('dom_123', {
+   *   host: 'links.empresa.com.br'
+   * });
+   * ```
+   */
+  public async setTrackingDomain(
+    id: string,
+    payload: SetTrackingDomainPayload,
+  ): Promise<CoffeeMailResponse<DomainCustomHostStatus>> {
+    return this.http.put<DomainCustomHostStatus>(
+      `/v1/product/domains/${id}/tracking-domain`,
+      payload,
+    );
+  }
+
+  /**
+   * Remove o host de tracking próprio do domínio; os links voltam a usar o
+   * host padrão da plataforma. Em caso de sucesso, `data` é `null`.
+   *
+   * @example
+   * ```typescript
+   * const { error } = await coffeemail.domains.removeTrackingDomain('dom_123');
+   * ```
+   */
+  public async removeTrackingDomain(
+    id: string,
+  ): Promise<CoffeeMailResponse<DomainCustomHostStatus | null>> {
+    return this.http.delete<DomainCustomHostStatus | null>(
+      `/v1/product/domains/${id}/tracking-domain`,
     );
   }
 }

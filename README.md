@@ -279,11 +279,14 @@ const next = data?.nextCursor
 | --- | --- | --- |
 | `create({ name })` | Registra um domínio e retorna os registros DNS a publicar (`dkimRecordsToPublish`). | `POST /v1/product/domains` |
 | `list()` | Lista os domínios da organização. | `GET /v1/product/domains` |
-| `get(id)` | Detalhe do domínio com `dnsRecordsToPublish`. | `GET /v1/product/domains/{id}` |
+| `get(id)` | Detalhe do domínio com `dnsRecordsToPublish`, `dkimRotation`, `returnPath`, `trackingDomain` e `trackingDomainsAvailable`. | `GET /v1/product/domains/{id}` |
 | `verify(id)` | Verifica SPF, DKIM e DMARC agora; retorna `status` e `checks`. | `POST /v1/product/domains/{id}/verify` |
 | `delete(id)` | Remove o domínio. | `DELETE /v1/product/domains/{id}` |
 | `getHealth(id)` | Diagnóstico de SPF/DKIM/DMARC em tempo real. | `POST /v1/product/domains/{id}/health` |
-| `getWarmupStatus(id)` | Progresso do aquecimento do domínio (ou `null`). | `GET /v1/product/domains/{id}/warmup` |
+| `getWarmupStatus(id)` | Progresso do aquecimento do domínio (ou `null`), com `status` (`warming`, `completed`), `totalDays`, `startedAt` e `completedAt`. | `GET /v1/product/domains/{id}/warmup` |
+| `rotateDkim(id)` | Inicia a rotação da chave DKIM e devolve o registro TXT do novo seletor. Idempotente: com rotação pendente, devolve a mesma. Domínio não verificado → `ConflictError` (`apiCode` `DOMAIN_NOT_VERIFIED`). | `POST /v1/product/domains/{id}/dkim/rotate` |
+| `setTrackingDomain(id, { host })` | Cadastra o host de tracking próprio (links de abertura e clique) e devolve o CNAME a publicar. Host inválido → `ValidationError` (`INVALID_TRACKING_HOST`); recurso desligado → `ConflictError` (`TRACKING_DOMAINS_DISABLED`). | `PUT /v1/product/domains/{id}/tracking-domain` |
+| `removeTrackingDomain(id)` | Remove o host de tracking próprio; `data` é `null`. | `DELETE /v1/product/domains/{id}/tracking-domain` |
 
 _A partir da 0.3.0_: os campos opcionais `statusReason` (`dns_records_missing`, `provider_pending`, `provider_failed`), `sendingIdentity` (`provider`, `state`, `lastSyncedAt`) e `checks.*.resolution` (`found`, `absent`, `unknown`).
 
@@ -293,6 +296,14 @@ console.log(domain?.dkimRecordsToPublish);
 
 const { data: check } = await coffeemail.domains.verify(domain!.id);
 console.log(check?.status, check?.checks.dkim.ok);
+
+const { data: rotation } = await coffeemail.domains.rotateDkim(domain!.id);
+console.log(rotation?.selector, rotation?.record);
+
+const { data: tracking } = await coffeemail.domains.setTrackingDomain(domain!.id, {
+  host: "links.seudominio.com.br",
+});
+console.log(tracking?.record, tracking?.verified);
 ```
 
 ### Templates — `coffeemail.templates`

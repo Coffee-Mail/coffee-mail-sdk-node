@@ -72,6 +72,10 @@ export type {
   DomainHealthCheckResult,
   DomainHealthResponse,
   DomainWarmupStatus,
+  DomainWarmupState,
+  DomainDkimRotation,
+  DomainCustomHostStatus,
+  SetTrackingDomainPayload,
 } from "./types/domains.types.js";
 
 export type {
