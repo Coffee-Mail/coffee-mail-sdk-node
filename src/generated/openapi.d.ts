@@ -1597,6 +1597,99 @@ export interface paths {
                                 /** @description Indica se o registro pertence à infraestrutura global da plataforma */
                                 isInfrastructure?: boolean;
                             }[];
+                            /** @description Rotação de DKIM em andamento, ou null quando não há rotação pendente */
+                            dkimRotation: {
+                                /**
+                                 * Format: uuid
+                                 * @description Identificador único do domínio
+                                 */
+                                domainId: string;
+                                /** @description Seletor DKIM pendente, que passa a valer após a propagação do DNS */
+                                selector: string;
+                                /**
+                                 * Format: date-time
+                                 * @description Data e hora em que a rotação foi iniciada
+                                 */
+                                startedAt: string;
+                                /** @description Registro TXT que precisa ser publicado para concluir a rotação */
+                                record: {
+                                    /**
+                                     * @description Tipo do registro DNS a ser publicado
+                                     * @enum {string}
+                                     */
+                                    type: "TXT" | "CNAME";
+                                    /** @description Nome do host/subdomínio onde o registro deve ser criado */
+                                    host: string;
+                                    /** @description Valor que deve ser publicado no registro DNS */
+                                    value: string;
+                                    /** @description TTL em segundos sugerido para o registro */
+                                    ttl?: number;
+                                    /** @description Indica se o registro pertence à infraestrutura global da plataforma */
+                                    isInfrastructure?: boolean;
+                                };
+                            } | null;
+                            /** @description Return-path próprio (bounces.<domínio>), ou null quando a plataforma não oferece return-path */
+                            returnPath: {
+                                /** @description Host do domínio do cliente que precisa apontar para a plataforma */
+                                host: string;
+                                /** @description Host da plataforma para onde o CNAME deve apontar */
+                                target: string;
+                                /** @description Indica se o CNAME foi encontrado apontando para o alvo */
+                                verified: boolean;
+                                /**
+                                 * Format: date-time
+                                 * @description Data e hora em que o CNAME foi confirmado
+                                 */
+                                verifiedAt: string | null;
+                                /** @description Registro CNAME a publicar */
+                                record: {
+                                    /**
+                                     * @description Tipo do registro DNS a ser publicado
+                                     * @enum {string}
+                                     */
+                                    type: "TXT" | "CNAME";
+                                    /** @description Nome do host/subdomínio onde o registro deve ser criado */
+                                    host: string;
+                                    /** @description Valor que deve ser publicado no registro DNS */
+                                    value: string;
+                                    /** @description TTL em segundos sugerido para o registro */
+                                    ttl?: number;
+                                    /** @description Indica se o registro pertence à infraestrutura global da plataforma */
+                                    isInfrastructure?: boolean;
+                                };
+                            } | null;
+                            /** @description Host de tracking próprio do domínio, ou null quando não há host cadastrado ou o recurso está desligado */
+                            trackingDomain: {
+                                /** @description Host do domínio do cliente que precisa apontar para a plataforma */
+                                host: string;
+                                /** @description Host da plataforma para onde o CNAME deve apontar */
+                                target: string;
+                                /** @description Indica se o CNAME foi encontrado apontando para o alvo */
+                                verified: boolean;
+                                /**
+                                 * Format: date-time
+                                 * @description Data e hora em que o CNAME foi confirmado
+                                 */
+                                verifiedAt: string | null;
+                                /** @description Registro CNAME a publicar */
+                                record: {
+                                    /**
+                                     * @description Tipo do registro DNS a ser publicado
+                                     * @enum {string}
+                                     */
+                                    type: "TXT" | "CNAME";
+                                    /** @description Nome do host/subdomínio onde o registro deve ser criado */
+                                    host: string;
+                                    /** @description Valor que deve ser publicado no registro DNS */
+                                    value: string;
+                                    /** @description TTL em segundos sugerido para o registro */
+                                    ttl?: number;
+                                    /** @description Indica se o registro pertence à infraestrutura global da plataforma */
+                                    isInfrastructure?: boolean;
+                                };
+                            } | null;
+                            /** @description Indica se a plataforma permite cadastrar um host de tracking próprio */
+                            trackingDomainsAvailable: boolean;
                         };
                     };
                 };
@@ -1921,6 +2014,11 @@ export interface paths {
                              * @description Identificador único do domínio
                              */
                             domainId: string;
+                            /**
+                             * @description warming enquanto a rampa está ativa; completed quando terminou e não há mais limite
+                             * @enum {string}
+                             */
+                            status: "warming" | "completed";
                             /** @description Dia atual do período de aquecimento (warmup) */
                             currentDay: number;
                             /** @description Limite diário de envios permitido para o dia atual */
@@ -1933,6 +2031,18 @@ export interface paths {
                             quotaUsedPercent: number;
                             /** @description Data do último envio registrado para o domínio */
                             lastSendDate: string | null;
+                            /** @description Duração total da rampa de aquecimento, em dias */
+                            totalDays: number;
+                            /**
+                             * Format: date-time
+                             * @description Início do aquecimento (verificação do domínio)
+                             */
+                            startedAt: string;
+                            /**
+                             * Format: date-time
+                             * @description Quando o aquecimento terminou; nulo enquanto está em andamento
+                             */
+                            completedAt: string | null;
                         } | null;
                     };
                 };
@@ -1941,6 +2051,196 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/product/domains/{id}/dkim/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador do domínio */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Rotação de DKIM pendente: a chave em uso só muda quando o registro TXT do novo seletor for encontrado no DNS */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * Format: uuid
+                             * @description Identificador único do domínio
+                             */
+                            domainId: string;
+                            /** @description Seletor DKIM pendente, que passa a valer após a propagação do DNS */
+                            selector: string;
+                            /**
+                             * Format: date-time
+                             * @description Data e hora em que a rotação foi iniciada
+                             */
+                            startedAt: string;
+                            /** @description Registro TXT que precisa ser publicado para concluir a rotação */
+                            record: {
+                                /**
+                                 * @description Tipo do registro DNS a ser publicado
+                                 * @enum {string}
+                                 */
+                                type: "TXT" | "CNAME";
+                                /** @description Nome do host/subdomínio onde o registro deve ser criado */
+                                host: string;
+                                /** @description Valor que deve ser publicado no registro DNS */
+                                value: string;
+                                /** @description TTL em segundos sugerido para o registro */
+                                ttl?: number;
+                                /** @description Indica se o registro pertence à infraestrutura global da plataforma */
+                                isInfrastructure?: boolean;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/product/domains/{id}/tracking-domain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador do domínio */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @description Subdomínio do domínio de envio usado nos links de abertura e clique */
+                        host: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Host do domínio do cliente que precisa apontar para a plataforma */
+                            host: string;
+                            /** @description Host da plataforma para onde o CNAME deve apontar */
+                            target: string;
+                            /** @description Indica se o CNAME foi encontrado apontando para o alvo */
+                            verified: boolean;
+                            /**
+                             * Format: date-time
+                             * @description Data e hora em que o CNAME foi confirmado
+                             */
+                            verifiedAt: string | null;
+                            /** @description Registro CNAME a publicar */
+                            record: {
+                                /**
+                                 * @description Tipo do registro DNS a ser publicado
+                                 * @enum {string}
+                                 */
+                                type: "TXT" | "CNAME";
+                                /** @description Nome do host/subdomínio onde o registro deve ser criado */
+                                host: string;
+                                /** @description Valor que deve ser publicado no registro DNS */
+                                value: string;
+                                /** @description TTL em segundos sugerido para o registro */
+                                ttl?: number;
+                                /** @description Indica se o registro pertence à infraestrutura global da plataforma */
+                                isInfrastructure?: boolean;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador do domínio */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Host do domínio do cliente que precisa apontar para a plataforma */
+                            host: string;
+                            /** @description Host da plataforma para onde o CNAME deve apontar */
+                            target: string;
+                            /** @description Indica se o CNAME foi encontrado apontando para o alvo */
+                            verified: boolean;
+                            /**
+                             * Format: date-time
+                             * @description Data e hora em que o CNAME foi confirmado
+                             */
+                            verifiedAt: string | null;
+                            /** @description Registro CNAME a publicar */
+                            record: {
+                                /**
+                                 * @description Tipo do registro DNS a ser publicado
+                                 * @enum {string}
+                                 */
+                                type: "TXT" | "CNAME";
+                                /** @description Nome do host/subdomínio onde o registro deve ser criado */
+                                host: string;
+                                /** @description Valor que deve ser publicado no registro DNS */
+                                value: string;
+                                /** @description TTL em segundos sugerido para o registro */
+                                ttl?: number;
+                                /** @description Indica se o registro pertence à infraestrutura global da plataforma */
+                                isInfrastructure?: boolean;
+                            };
+                        } | null;
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -2479,11 +2779,13 @@ export interface paths {
             requestBody?: never;
             responses: {
                 /** @description Default Response */
-                200: {
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": null;
+                    };
                 };
             };
         };
