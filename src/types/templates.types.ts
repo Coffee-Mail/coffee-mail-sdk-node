@@ -128,3 +128,50 @@ export interface TestSendTemplateResponse {
   readonly subject: string;
   readonly sentAt: string;
 }
+
+export interface ListTemplateVersionsQuery {
+  /**
+   * Versões por página, de 1 a 100.
+   * @default 20
+   */
+  readonly limit?: number;
+  /**
+   * Deslocamento da página.
+   * @default 0
+   */
+  readonly offset?: number;
+}
+
+/**
+ * Resumo de uma versão gravada de um template. `createdBy` é `null` quando a
+ * versão foi gerada por uma API key.
+ */
+export interface TemplateVersionSummary {
+  readonly version: number;
+  readonly name: string;
+  readonly subject: string | null;
+  readonly createdBy: string | null;
+  readonly createdAt: string;
+}
+
+export interface ListTemplateVersionsResponse {
+  /**
+   * Versões, da mais recente para a mais antiga.
+   */
+  readonly data: ReadonlyArray<TemplateVersionSummary>;
+  readonly total: number;
+}
+
+/**
+ * Conteúdo completo de uma versão gravada de um template.
+ */
+export interface TemplateVersionDetail extends TemplateVersionSummary {
+  readonly templateId: string;
+  readonly preheader: string | null;
+  readonly html: string;
+  readonly contentJson: Record<string, unknown> | null;
+  readonly textPayload: string | null;
+  readonly variables: ReadonlyArray<TemplateVariable>;
+  readonly format: TemplateFormat;
+  readonly sourceLocale: string;
+}

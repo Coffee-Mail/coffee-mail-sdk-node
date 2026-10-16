@@ -121,7 +121,8 @@ export interface SendEmailPayload {
   readonly text?: string;
 
   /**
-   * ID de um modelo pré-cadastrado na plataforma. Não pode ser usado junto com `html`/`text`.
+   * ID ou alias de um modelo pré-cadastrado na plataforma. Não pode ser usado junto com `html`/`text`.
+   * @example "boas-vindas"
    */
   readonly templateId?: string;
 

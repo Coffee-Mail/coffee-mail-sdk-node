@@ -9,12 +9,66 @@ export interface DomainDnsRecord {
   readonly host: string;
   readonly value: string;
   readonly ttl?: number;
+  /**
+   * Indica se o registro pertence à infraestrutura global da plataforma.
+   */
+  readonly isInfrastructure?: boolean;
+}
+
+/**
+ * Rotação de DKIM pendente. A chave em uso só muda quando o registro TXT do
+ * novo seletor for encontrado no DNS.
+ */
+export interface DomainDkimRotation {
+  readonly domainId: string;
+  /**
+   * Seletor DKIM pendente, que passa a valer após a propagação do DNS.
+   */
+  readonly selector: string;
+  readonly startedAt: string;
+  /**
+   * Registro TXT que precisa ser publicado para concluir a rotação.
+   */
+  readonly record: DomainDnsRecord;
+}
+
+/**
+ * Situação de um host próprio (return-path ou tracking) que precisa de um
+ * CNAME apontando para a plataforma.
+ */
+export interface DomainCustomHostStatus {
+  /**
+   * Host do domínio do cliente que precisa apontar para a plataforma.
+   */
+  readonly host: string;
+  /**
+   * Host da plataforma para onde o CNAME deve apontar.
+   */
+  readonly target: string;
+  readonly verified: boolean;
+  readonly verifiedAt: string | null;
+  /**
+   * Registro CNAME a publicar.
+   */
+  readonly record: DomainDnsRecord;
+}
+
+/**
+ * Corpo de `setTrackingDomain()`.
+ */
+export interface SetTrackingDomainPayload {
+  /**
+   * Subdomínio do domínio de envio usado nos links de abertura e clique.
+   */
+  readonly host: string;
 }
 
 export type DomainStatusReason =
   | "dns_records_missing"
   | "provider_pending"
   | "provider_failed";
+
+export type DomainWarmupState = "warming" | "completed";
 
 export type DomainDnsResolution = "found" | "absent" | "unknown";
 
@@ -60,6 +114,22 @@ export interface DomainDetail {
    * Registros DNS pendentes que ainda precisam ser publicados no provedor.
    */
   readonly dnsRecordsToPublish: ReadonlyArray<DomainDnsRecord>;
+  /**
+   * Rotação de DKIM em andamento, ou `null` quando não há rotação pendente.
+   */
+  readonly dkimRotation?: DomainDkimRotation | null;
+  /**
+   * Return-path próprio, ou `null` quando a plataforma não oferece return-path.
+   */
+  readonly returnPath?: DomainCustomHostStatus | null;
+  /**
+   * Host de tracking próprio, ou `null` quando não há host cadastrado ou o recurso está desligado.
+   */
+  readonly trackingDomain?: DomainCustomHostStatus | null;
+  /**
+   * Indica se a plataforma permite cadastrar um host de tracking próprio.
+   */
+  readonly trackingDomainsAvailable?: boolean;
 }
 
 /**
@@ -139,10 +209,26 @@ export interface DomainHealthResponse {
  */
 export interface DomainWarmupStatus {
   readonly domainId: string;
+  /**
+   * `warming` enquanto a rampa está ativa; `completed` quando terminou e não há mais limite.
+   */
+  readonly status?: DomainWarmupState;
   readonly currentDay: number;
   readonly dailyQuota: number;
   readonly sentToday: number;
   readonly remainingToday: number;
   readonly quotaUsedPercent: number;
   readonly lastSendDate: string | null;
+  /**
+   * Duração total da rampa de aquecimento, em dias.
+   */
+  readonly totalDays?: number;
+  /**
+   * Início do aquecimento (verificação do domínio).
+   */
+  readonly startedAt?: string;
+  /**
+   * Quando o aquecimento terminou; `null` enquanto está em andamento.
+   */
+  readonly completedAt?: string | null;
 }

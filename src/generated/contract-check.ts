@@ -26,7 +26,13 @@ import type {
   BroadcastDetail,
   TestSendBroadcastResult,
 } from "../types/broadcasts.types.js";
-import type { DomainDetail } from "../types/domains.types.js";
+import type {
+  DomainCustomHostStatus,
+  DomainDetail,
+  DomainDkimRotation,
+  DomainWarmupStatus,
+  SetTrackingDomainPayload,
+} from "../types/domains.types.js";
 import type { EmailDetail } from "../types/emails.types.js";
 import type { StatsResponse } from "../types/stats.types.js";
 import type {
@@ -38,8 +44,16 @@ import type {
   ListSendersResponse,
   VerifySenderResult,
 } from "../types/senders.types.js";
-import type { TemplateDetail } from "../types/templates.types.js";
-import type { WebhookDetail } from "../types/webhooks.types.js";
+import type {
+  ListTemplateVersionsResponse,
+  TemplateDetail,
+  TemplateVersionDetail,
+} from "../types/templates.types.js";
+import type { ValidateEmailsResponse } from "../types/validation.types.js";
+import type {
+  WebhookDeliveryDetail,
+  WebhookDetail,
+} from "../types/webhooks.types.js";
 
 type Assert<T extends true> = T;
 type Extends<A, B> = A extends B ? true : false;
@@ -59,8 +73,50 @@ export type _CheckEmailDetail = Assert<
 export type _CheckDomainDetail = Assert<
   Extends<Json200<"/v1/product/domains/{id}", "get">, DomainDetail>
 >;
+export type _CheckDomainWarmupStatus = Assert<
+  Extends<Json200<"/v1/product/domains/{id}/warmup", "get">, DomainWarmupStatus | null>
+>;
+export type _CheckDomainDkimRotation = Assert<
+  Extends<Json200<"/v1/product/domains/{id}/dkim/rotate", "post">, DomainDkimRotation>
+>;
+export type _CheckSetTrackingDomain = Assert<
+  Extends<Json200<"/v1/product/domains/{id}/tracking-domain", "put">, DomainCustomHostStatus>
+>;
+export type _CheckRemoveTrackingDomain = Assert<
+  Extends<
+    Json200<"/v1/product/domains/{id}/tracking-domain", "delete">,
+    DomainCustomHostStatus | null
+  >
+>;
 export type _CheckTemplateDetail = Assert<
   Extends<Json200<"/v1/product/templates/{id}", "get">, TemplateDetail>
+>;
+export type _CheckListTemplateVersions = Assert<
+  Extends<
+    Json200<"/v1/product/templates/{id}/versions", "get">,
+    ListTemplateVersionsResponse
+  >
+>;
+export type _CheckTemplateVersionDetail = Assert<
+  Extends<
+    Json200<"/v1/product/templates/{id}/versions/{version}", "get">,
+    TemplateVersionDetail
+  >
+>;
+export type _CheckRestoreTemplateVersion = Assert<
+  Extends<
+    Json200<"/v1/product/templates/{id}/versions/{version}/restore", "post">,
+    TemplateDetail
+  >
+>;
+export type _CheckValidateEmails = Assert<
+  Extends<Json200<"/v1/product/validate", "post">, ValidateEmailsResponse>
+>;
+export type _CheckWebhookDeliveryDetail = Assert<
+  Extends<
+    Json200<"/v1/product/webhooks/{id}/deliveries/{deliveryId}", "get">,
+    Omit<WebhookDeliveryDetail, "status">
+  >
 >;
 export type _CheckAudienceDetail = Assert<
   Extends<Json200<"/v1/product/audiences/{id}", "get">, AudienceDetail>
@@ -103,6 +159,22 @@ export type _CheckTestSendBroadcast = Assert<
   Extends<Json200<"/v1/product/broadcasts/{id}/test-send", "post">, TestSendBroadcastResult>
 >;
 
+type Json202<
+  Path extends keyof paths,
+  Method extends keyof paths[Path],
+> = paths[Path][Method] extends {
+  responses: { 202: { content: { "application/json": infer R } } };
+}
+  ? R
+  : never;
+
+export type _CheckReplayWebhookDelivery = Assert<
+  Extends<
+    Json202<"/v1/product/webhooks/{id}/deliveries/{deliveryId}/replay", "post">,
+    Omit<WebhookDeliveryDetail, "status">
+  >
+>;
+
 type JsonRequestBody<
   Path extends keyof paths,
   Method extends keyof paths[Path],
@@ -114,7 +186,18 @@ type JsonRequestBody<
 
 export type SendEmailWireBodyKey = keyof JsonRequestBody<"/v1/product/emails", "post">;
 
+export type _CheckSetTrackingDomainBody = Assert<
+  Extends<
+    keyof SetTrackingDomainPayload,
+    keyof JsonRequestBody<"/v1/product/domains/{id}/tracking-domain", "put">
+  >
+>;
+
 export type CreateBroadcastWireBodyKey = keyof JsonRequestBody<
   "/v1/product/broadcasts",
   "post"
+>;
+
+export type _CheckValidateEmailsBody = Assert<
+  Extends<"emails", keyof JsonRequestBody<"/v1/product/validate", "post">>
 >;

@@ -338,6 +338,232 @@ describe("Domains & Webhooks", () => {
     });
   });
 
+  describe("Domains — entregabilidade", () => {
+    const dkimRotation = {
+      domainId: "dom_123",
+      selector: "cm202610",
+      startedAt: "2026-10-15T12:00:00.000Z",
+      record: {
+        type: "TXT",
+        host: "cm202610._domainkey.empresa.com.br",
+        value: "v=DKIM1; k=rsa; p=nova",
+        ttl: 3600,
+      },
+    };
+    const trackingHost = {
+      host: "links.empresa.com.br",
+      target: "track.coffeemail.com.br",
+      verified: false,
+      verifiedAt: null,
+      record: {
+        type: "CNAME",
+        host: "links.empresa.com.br",
+        value: "track.coffeemail.com.br",
+        isInfrastructure: false,
+      },
+    };
+
+    it("deve expor os campos de conclusão do warmup", async () => {
+      mockFetch.mockResolvedValue(
+        jsonResponse({
+          domainId: "dom_123",
+          status: "completed",
+          currentDay: 30,
+          dailyQuota: 50000,
+          sentToday: 0,
+          remainingToday: 50000,
+          quotaUsedPercent: 0,
+          lastSendDate: "2026-10-14",
+          totalDays: 30,
+          startedAt: "2026-09-15T00:00:00.000Z",
+          completedAt: "2026-10-15T00:00:00.000Z",
+        }),
+      );
+
+      const { data, error } = await domains.getWarmupStatus("dom_123");
+
+      expect(error).toBeNull();
+      expect(data?.status).toBe("completed");
+      expect(data?.totalDays).toBe(30);
+      expect(data?.startedAt).toBe("2026-09-15T00:00:00.000Z");
+      expect(data?.completedAt).toBe("2026-10-15T00:00:00.000Z");
+    });
+
+    it("deve expor dkimRotation, returnPath, trackingDomain e trackingDomainsAvailable no detalhe", async () => {
+      mockFetch.mockResolvedValue(
+        jsonResponse({
+          id: "dom_123",
+          name: "empresa.com.br",
+          status: "verified",
+          dkimSelector: "coffeemail",
+          dkimPublicKey: "chave_publica",
+          verifiedAt: "2026-01-01T00:00:00.000Z",
+          lastCheckAt: "2026-01-01T00:00:00.000Z",
+          createdAt: "2025-12-01T00:00:00.000Z",
+          dnsRecordsToPublish: [],
+          dkimRotation,
+          returnPath: {
+            ...trackingHost,
+            host: "bounces.empresa.com.br",
+            target: "bounces.coffeemail.com.br",
+            verified: true,
+            verifiedAt: "2026-10-01T00:00:00.000Z",
+          },
+          trackingDomain: trackingHost,
+          trackingDomainsAvailable: true,
+        }),
+      );
+
+      const { data, error } = await domains.get("dom_123");
+
+      expect(error).toBeNull();
+      expect(data?.dkimRotation).toEqual(dkimRotation);
+      expect(data?.returnPath?.verified).toBe(true);
+      expect(data?.returnPath?.host).toBe("bounces.empresa.com.br");
+      expect(data?.trackingDomain).toEqual(trackingHost);
+      expect(data?.trackingDomainsAvailable).toBe(true);
+    });
+
+    it("deve rotacionar o DKIM com URL e método POST corretos, sem corpo", async () => {
+      mockFetch.mockResolvedValue(jsonResponse(dkimRotation));
+
+      const { data, error } = await domains.rotateDkim("dom_123");
+
+      expect(error).toBeNull();
+      expect(data).toEqual(dkimRotation);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://api.coffeemail.com.br/v1/product/domains/dom_123/dkim/rotate",
+        expect.objectContaining({ method: "POST" }),
+      );
+      expect(mockFetch.mock.calls[0]?.[1]?.body).toBeUndefined();
+    });
+
+    it("deve retornar ConflictError ao rotacionar DKIM de domínio não verificado", async () => {
+      mockFetch.mockResolvedValue(
+        jsonResponse(
+          {
+            error: {
+              code: "DOMAIN_NOT_VERIFIED",
+              message: "O domínio precisa estar verificado",
+            },
+          },
+          409,
+        ),
+      );
+
+      const { data, error } = await domains.rotateDkim("dom_123");
+
+      expect(data).toBeNull();
+      expect(error).toBeInstanceOf(ConflictError);
+      expect(error?.status).toBe(409);
+      expect(error?.apiCode).toBe("DOMAIN_NOT_VERIFIED");
+    });
+
+    it("deve retornar NotFoundError ao rotacionar DKIM de domínio inexistente", async () => {
+      mockFetch.mockResolvedValue(
+        jsonResponse(
+          { error: { code: "DOMAIN_NOT_FOUND", message: "Domínio não encontrado" } },
+          404,
+        ),
+      );
+
+      const { data, error } = await domains.rotateDkim("dom_inexistente");
+
+      expect(data).toBeNull();
+      expect(error).toBeInstanceOf(NotFoundError);
+      expect(error?.apiCode).toBe("DOMAIN_NOT_FOUND");
+    });
+
+    it("deve cadastrar o tracking domain com URL, método PUT e corpo corretos", async () => {
+      mockFetch.mockResolvedValue(jsonResponse(trackingHost));
+
+      const { data, error } = await domains.setTrackingDomain("dom_123", {
+        host: "links.empresa.com.br",
+      });
+
+      expect(error).toBeNull();
+      expect(data).toEqual(trackingHost);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://api.coffeemail.com.br/v1/product/domains/dom_123/tracking-domain",
+        expect.objectContaining({
+          method: "PUT",
+          body: JSON.stringify({ host: "links.empresa.com.br" }),
+        }),
+      );
+    });
+
+    it("deve retornar ConflictError quando o tracking domain está desligado na plataforma", async () => {
+      mockFetch.mockResolvedValue(
+        jsonResponse(
+          {
+            error: {
+              code: "TRACKING_DOMAINS_DISABLED",
+              message: "Tracking próprio indisponível",
+            },
+          },
+          409,
+        ),
+      );
+
+      const { data, error } = await domains.setTrackingDomain("dom_123", {
+        host: "links.empresa.com.br",
+      });
+
+      expect(data).toBeNull();
+      expect(error).toBeInstanceOf(ConflictError);
+      expect(error?.apiCode).toBe("TRACKING_DOMAINS_DISABLED");
+    });
+
+    it("deve retornar ValidationError para host de tracking inválido", async () => {
+      mockFetch.mockResolvedValue(
+        jsonResponse(
+          {
+            error: {
+              code: "INVALID_TRACKING_HOST",
+              message: "O host precisa ser subdomínio do domínio de envio",
+            },
+          },
+          400,
+        ),
+      );
+
+      const { data, error } = await domains.setTrackingDomain("dom_123", {
+        host: "links.outro.com.br",
+      });
+
+      expect(data).toBeNull();
+      expect(error).toBeInstanceOf(ValidationError);
+      expect(error?.apiCode).toBe("INVALID_TRACKING_HOST");
+    });
+
+    it("deve remover o tracking domain com URL e método DELETE corretos", async () => {
+      mockFetch.mockResolvedValue(jsonResponse(null));
+
+      const { data, error } = await domains.removeTrackingDomain("dom_123");
+
+      expect(error).toBeNull();
+      expect(data).toBeNull();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://api.coffeemail.com.br/v1/product/domains/dom_123/tracking-domain",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("deve retornar NotFoundError ao remover tracking domain de domínio inexistente", async () => {
+      mockFetch.mockResolvedValue(
+        jsonResponse(
+          { error: { code: "DOMAIN_NOT_FOUND", message: "Domínio não encontrado" } },
+          404,
+        ),
+      );
+
+      const { data, error } = await domains.removeTrackingDomain("dom_inexistente");
+
+      expect(data).toBeNull();
+      expect(error).toBeInstanceOf(NotFoundError);
+    });
+  });
+
   describe("Webhooks", () => {
     it("deve criar um webhook com URL e método POST corretos", async () => {
       mockFetch.mockResolvedValue(

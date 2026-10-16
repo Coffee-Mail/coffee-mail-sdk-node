@@ -36,6 +36,7 @@ export { Senders } from "./resources/senders.js";
 export { Suppressions } from "./resources/suppressions.js";
 export { Webhooks } from "./resources/webhooks.js";
 export { Stats } from "./resources/stats.js";
+export { Validation } from "./resources/validation.js";
 
 export type {
   EmailAddressInput,
@@ -72,6 +73,10 @@ export type {
   DomainHealthCheckResult,
   DomainHealthResponse,
   DomainWarmupStatus,
+  DomainWarmupState,
+  DomainDkimRotation,
+  DomainCustomHostStatus,
+  SetTrackingDomainPayload,
 } from "./types/domains.types.js";
 
 export type {
@@ -90,6 +95,10 @@ export type {
   TestRenderTemplateResponse,
   TestSendTemplatePayload,
   TestSendTemplateResponse,
+  ListTemplateVersionsQuery,
+  ListTemplateVersionsResponse,
+  TemplateVersionSummary,
+  TemplateVersionDetail,
 } from "./types/templates.types.js";
 
 export type {
@@ -157,6 +166,7 @@ export type {
   TestWebhookResult,
   WebhookDeliveryStatus,
   WebhookDelivery,
+  WebhookDeliveryDetail,
   ListWebhookDeliveriesResponse,
   ListWebhookDeliveriesQuery,
   VerifyWebhookSignatureOptions,
@@ -171,3 +181,9 @@ export type {
   StatsDataPoint,
   StatsResponse,
 } from "./types/stats.types.js";
+
+export type {
+  EmailValidationItem,
+  EmailValidationCredits,
+  ValidateEmailsResponse,
+} from "./types/validation.types.js";
