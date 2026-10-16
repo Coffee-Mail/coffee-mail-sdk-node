@@ -310,10 +310,7 @@ export interface paths {
                             /** @description Content-ID usado para referenciar o anexo inline no HTML */
                             cid?: string;
                         }[];
-                        /**
-                         * Format: uuid
-                         * @description ID do template usado para montar o e-mail
-                         */
+                        /** @description Id ou alias do template usado para montar o e-mail */
                         templateId?: string;
                         /** @description Variáveis para preencher o template */
                         variables?: {
@@ -474,10 +471,7 @@ export interface paths {
                             /** @description Content-ID usado para referenciar o anexo inline no HTML */
                             cid?: string;
                         }[];
-                        /**
-                         * Format: uuid
-                         * @description ID do template usado para montar o e-mail
-                         */
+                        /** @description Id ou alias do template usado para montar o e-mail */
                         templateId?: string;
                         /** @description Variáveis para preencher o template */
                         variables?: {
@@ -1329,6 +1323,166 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/product/webhooks/{id}/deliveries/{deliveryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador do webhook */
+                    id: string;
+                    /** @description Identificador da entrega */
+                    deliveryId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Detalhe de uma entrega de webhook, com o corpo enviado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * Format: uuid
+                             * @description Identificador da tentativa de entrega
+                             */
+                            id: string;
+                            /**
+                             * Format: uuid
+                             * @description Identificador do webhook associado
+                             */
+                            webhookId: string;
+                            /**
+                             * Format: uuid
+                             * @description Evento de e-mail que originou a entrega
+                             */
+                            emailEventId: string | null;
+                            /** @description Tipo de evento disparado (ex: email.delivered) */
+                            eventType: string;
+                            /** @description Status HTTP retornado pelo endpoint de destino */
+                            responseStatus: number | null;
+                            /** @description Corpo da resposta retornada pelo endpoint de destino */
+                            responseBody: string | null;
+                            /** @description Quantidade de tentativas de envio já realizadas */
+                            attempts: number;
+                            /** @description Mensagem do último erro ocorrido no envio */
+                            lastError: string | null;
+                            /** @description Status atual da entrega (pending, success, failed ou exhausted) */
+                            status: string;
+                            /**
+                             * Format: date-time
+                             * @description Data e hora da próxima tentativa de reenvio
+                             */
+                            nextRunAt: string;
+                            /**
+                             * Format: date-time
+                             * @description Data e hora em que a entrega foi criada
+                             */
+                            createdAt: string;
+                            /** @description Corpo JSON enviado ao endpoint de destino */
+                            requestPayload: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/product/webhooks/{id}/deliveries/{deliveryId}/replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador do webhook */
+                    id: string;
+                    /** @description Identificador da entrega */
+                    deliveryId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Detalhe de uma entrega de webhook, com o corpo enviado */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * Format: uuid
+                             * @description Identificador da tentativa de entrega
+                             */
+                            id: string;
+                            /**
+                             * Format: uuid
+                             * @description Identificador do webhook associado
+                             */
+                            webhookId: string;
+                            /**
+                             * Format: uuid
+                             * @description Evento de e-mail que originou a entrega
+                             */
+                            emailEventId: string | null;
+                            /** @description Tipo de evento disparado (ex: email.delivered) */
+                            eventType: string;
+                            /** @description Status HTTP retornado pelo endpoint de destino */
+                            responseStatus: number | null;
+                            /** @description Corpo da resposta retornada pelo endpoint de destino */
+                            responseBody: string | null;
+                            /** @description Quantidade de tentativas de envio já realizadas */
+                            attempts: number;
+                            /** @description Mensagem do último erro ocorrido no envio */
+                            lastError: string | null;
+                            /** @description Status atual da entrega (pending, success, failed ou exhausted) */
+                            status: string;
+                            /**
+                             * Format: date-time
+                             * @description Data e hora da próxima tentativa de reenvio
+                             */
+                            nextRunAt: string;
+                            /**
+                             * Format: date-time
+                             * @description Data e hora em que a entrega foi criada
+                             */
+                            createdAt: string;
+                            /** @description Corpo JSON enviado ao endpoint de destino */
+                            requestPayload: string;
+                        };
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -4662,6 +4816,330 @@ export interface paths {
                              * @description E-mail do destinatário do teste
                              */
                             recipient: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/product/templates/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Quantidade de versões por página */
+                    limit?: number;
+                    /** @description Deslocamento da página */
+                    offset?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Identificador do template */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Versões, da mais recente para a mais antiga */
+                            data: {
+                                /** @description Número da versão, crescente a partir de 1 */
+                                version: number;
+                                /** @description Nome do template nesta versão */
+                                name: string;
+                                /** @description Assunto do template nesta versão */
+                                subject: string | null;
+                                /**
+                                 * Format: uuid
+                                 * @description Usuário que gerou a versão, ou null quando veio de API key
+                                 */
+                                createdBy: string | null;
+                                /**
+                                 * Format: date-time
+                                 * @description Data em que a versão foi gravada
+                                 */
+                                createdAt: string;
+                            }[];
+                            /** @description Total de versões do template */
+                            total: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/product/templates/{id}/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador do template */
+                    id: string;
+                    /** @description Número da versão */
+                    version: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Número da versão, crescente a partir de 1 */
+                            version: number;
+                            /** @description Nome do template nesta versão */
+                            name: string;
+                            /** @description Assunto do template nesta versão */
+                            subject: string | null;
+                            /**
+                             * Format: uuid
+                             * @description Usuário que gerou a versão, ou null quando veio de API key
+                             */
+                            createdBy: string | null;
+                            /**
+                             * Format: date-time
+                             * @description Data em que a versão foi gravada
+                             */
+                            createdAt: string;
+                            /**
+                             * Format: uuid
+                             * @description Identificador do template
+                             */
+                            templateId: string;
+                            /** @description Preheader nesta versão */
+                            preheader: string | null;
+                            /** @description HTML nesta versão */
+                            html: string;
+                            /** @description Estado do editor visual nesta versão */
+                            contentJson: {
+                                [key: string]: unknown;
+                            } | null;
+                            /** @description Versão em texto simples nesta versão */
+                            textPayload: string | null;
+                            /** @description Variáveis nesta versão */
+                            variables: {
+                                /** @description Nome da variável usada no template */
+                                name: string;
+                                /** @description Descrição do propósito da variável */
+                                description?: string;
+                                /**
+                                 * @description Tipo da variável
+                                 * @enum {string}
+                                 */
+                                type?: "string" | "number" | "color";
+                                /** @description Valor padrão de fallback */
+                                fallbackValue?: string;
+                            }[];
+                            /**
+                             * @description Formato do código-fonte nesta versão
+                             * @enum {string}
+                             */
+                            format: "html" | "react";
+                            /**
+                             * @description Idioma de origem nesta versão
+                             * @enum {string}
+                             */
+                            sourceLocale: "pt-BR" | "en" | "es";
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/product/templates/{id}/versions/{version}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Identificador do template */
+                    id: string;
+                    /** @description Número da versão */
+                    version: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /**
+                             * Format: uuid
+                             * @description Identificador único do template
+                             */
+                            id: string;
+                            /**
+                             * Format: uuid
+                             * @description Identificador da organização dona do template
+                             */
+                            organisationId: string;
+                            /** @description Nome do template */
+                            name: string;
+                            /** @description Identificador amigável único para invocação via API ou SDK */
+                            alias: string | null;
+                            /** @description Assunto padrão do e-mail */
+                            subject: string | null;
+                            /** @description Texto de pré-visualização na caixa de entrada */
+                            preheader: string | null;
+                            /** @description Código-fonte HTML compilado do template */
+                            html: string;
+                            /** @description Estado estruturado da árvore de blocos visuais */
+                            contentJson: {
+                                [key: string]: unknown;
+                            } | null;
+                            /** @description Versão em texto simples do template */
+                            textPayload: string | null;
+                            /** @description Variáveis disponíveis para interpolação no template */
+                            variables: {
+                                /** @description Nome da variável usada no template */
+                                name: string;
+                                /** @description Descrição do propósito da variável */
+                                description?: string;
+                                /**
+                                 * @description Tipo da variável
+                                 * @enum {string}
+                                 */
+                                type?: "string" | "number" | "color";
+                                /** @description Valor padrão de fallback */
+                                fallbackValue?: string;
+                            }[];
+                            /** @description Indica se o template está ativo para uso */
+                            isActive: boolean;
+                            /**
+                             * @description Formato do código-fonte do template
+                             * @enum {string}
+                             */
+                            format: "html" | "react";
+                            /**
+                             * @description Idioma de origem do conteúdo do template
+                             * @enum {string}
+                             */
+                            sourceLocale: "pt-BR" | "en" | "es";
+                            /**
+                             * Format: date-time
+                             * @description Data de criação do template
+                             */
+                            createdAt: string;
+                            /**
+                             * Format: date-time
+                             * @description Data da última atualização do template
+                             */
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/product/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        emails: string[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: {
+                                email: string;
+                                formatValid: boolean;
+                                mxValid: boolean;
+                                isDisposable: boolean;
+                                reason?: string;
+                            }[];
+                            validCount: number;
+                            invalidCount: number;
+                            /** @description Saldo de créditos de validação da organização após esta chamada */
+                            credits: {
+                                /** @description Créditos de validação do mês, ou null quando ilimitado */
+                                limit: number | null;
+                                /** @description Créditos usados no mês */
+                                used: number;
+                                /** @description Créditos restantes no mês, ou null quando ilimitado */
+                                remaining: number | null;
+                            };
                         };
                     };
                 };
