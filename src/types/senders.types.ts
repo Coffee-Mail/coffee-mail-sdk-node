@@ -19,10 +19,15 @@ export interface SenderDetail {
 }
 
 /**
- * Remetente recém-criado, com o token enviado por e-mail para verificação.
+ * Remetente recém-criado. O token de verificação é enviado por e-mail ao
+ * próprio endereço cadastrado e não aparece mais na resposta.
  */
 export interface CreatedSenderDetail extends SenderDetail {
-  readonly verificationToken: string;
+  /**
+   * @deprecated A API não devolve mais o token na resposta; a verificação é
+   * concluída pelo link enviado ao e-mail do remetente.
+   */
+  readonly verificationToken?: string;
 }
 
 export interface ListSendersResponse {

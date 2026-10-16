@@ -30,6 +30,7 @@ const CREATE_BROADCAST_WIRE_KEYS: ReadonlyArray<CreateBroadcastWireBodyKey> = [
   "html",
   "text",
   "replyTo",
+  "scheduledAt",
   "variables",
 ];
 

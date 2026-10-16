@@ -4,6 +4,25 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 
 ## [Não lançado]
 
+### Adicionado
+
+- `broadcasts.create()` aceita `scheduledAt` (ISO 8601, no futuro): a campanha nasce `scheduled` e é disparada automaticamente no horário.
+- `broadcasts.get()` expõe `metrics` (entregues, abertos, cliques, bounces, falhas e suprimidos); tipo `BroadcastMetrics` exportado.
+- `senders.resendVerification(id)` reenvia o e-mail de verificação com um token novo.
+- `ContactDetail.subscribed`: `false` quando o contato se descadastrou dos broadcasts.
+
+### Alterado
+
+- `broadcasts.send()` passa a responder assim que o envio é enfileirado (`status: "sending"`, `recipientsQueued: 0`); o progresso acompanha-se por `broadcasts.get()`.
+
+### Depreciado
+
+- `CreatedSenderDetail.verificationToken`: a API não devolve mais o token na resposta de `senders.create()`; a verificação acontece pelo link enviado ao e-mail do remetente. O campo continua no tipo, agora opcional.
+
+### Corrigido
+
+- `pnpm generate:types` aceita caminho local em `COFFEEMAIL_OPENAPI_SPEC` (antes o caminho era tratado como conteúdo do spec).
+
 ## [0.3.0] - Não publicado
 
 Correções de contrato com a API. Como o SDK ainda não tinha usuários ativos, os comportamentos errados foram corrigidos diretamente, sem camada de depreciação.

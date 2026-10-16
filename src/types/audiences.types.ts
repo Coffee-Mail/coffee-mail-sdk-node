@@ -4,6 +4,10 @@ export interface ContactDetail {
   readonly firstName?: string | null;
   readonly lastName?: string | null;
   readonly metadata: Record<string, unknown>;
+  /**
+   * `false` quando o contato se descadastrou dos broadcasts da organização.
+   */
+  readonly subscribed?: boolean;
   readonly createdAt: string;
 }
 
