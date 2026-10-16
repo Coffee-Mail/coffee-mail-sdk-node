@@ -16,6 +16,7 @@ import type {
   ToggleWebhookResult,
   UpdateWebhookPayload,
   VerifyWebhookSignatureOptions,
+  WebhookDeliveryDetail,
   WebhookDetail,
   WebhookRequestHeaders,
 } from "../types/webhooks.types.js";
@@ -231,6 +232,42 @@ export class Webhooks {
     return this.http.get<ListWebhookDeliveriesResponse>(
       `/v1/product/webhooks/${id}/deliveries`,
       toQueryParams(query),
+    );
+  }
+
+  /**
+   * Obtém uma entrega do webhook com o corpo exato enviado (`requestPayload`).
+   *
+   * @example
+   * ```typescript
+   * const { data, error } = await coffeemail.webhooks.getDelivery('wh_123', 'dlv_456');
+   * ```
+   */
+  public async getDelivery(
+    id: string,
+    deliveryId: string,
+  ): Promise<CoffeeMailResponse<WebhookDeliveryDetail>> {
+    return this.http.get<WebhookDeliveryDetail>(
+      `/v1/product/webhooks/${id}/deliveries/${deliveryId}`,
+    );
+  }
+
+  /**
+   * Reenfileira uma entrega com o mesmo corpo e devolve a entrega nova
+   * (`status: 'pending'`). Entrega ainda pendente responde `ConflictError` com
+   * `apiCode` `WEBHOOK_DELIVERY_PENDING`; webhook inativo, `WEBHOOK_NOT_ACTIVE`.
+   *
+   * @example
+   * ```typescript
+   * const { data, error } = await coffeemail.webhooks.replayDelivery('wh_123', 'dlv_456');
+   * ```
+   */
+  public async replayDelivery(
+    id: string,
+    deliveryId: string,
+  ): Promise<CoffeeMailResponse<WebhookDeliveryDetail>> {
+    return this.http.post<WebhookDeliveryDetail>(
+      `/v1/product/webhooks/${id}/deliveries/${deliveryId}/replay`,
     );
   }
 

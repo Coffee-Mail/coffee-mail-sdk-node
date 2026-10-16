@@ -5,11 +5,14 @@ import type {
   CreateTemplatePayload,
   FormatTemplatePayload,
   FormatTemplateResponse,
+  ListTemplateVersionsQuery,
+  ListTemplateVersionsResponse,
   ListTemplatesQuery,
   ListTemplatesResponse,
   PreviewTemplatePayload,
   PreviewTemplateResponse,
   TemplateDetail,
+  TemplateVersionDetail,
   TestRenderTemplatePayload,
   TestRenderTemplateResponse,
   TestSendTemplatePayload,
@@ -139,6 +142,60 @@ export class Templates {
     return this.http.post<TestSendTemplateResponse>(
       `/v1/product/templates/${id}/test-send`,
       payload,
+    );
+  }
+
+  /**
+   * Lista as versões gravadas de um template, da mais recente para a mais antiga.
+   *
+   * @example
+   * ```typescript
+   * const { data, error } = await coffeemail.templates.listVersions('tpl_123', { limit: 10 });
+   * console.log(data?.total, data?.data[0]?.version);
+   * ```
+   */
+  public async listVersions(
+    id: string,
+    query?: ListTemplateVersionsQuery,
+  ): Promise<CoffeeMailResponse<ListTemplateVersionsResponse>> {
+    return this.http.get<ListTemplateVersionsResponse>(
+      `/v1/product/templates/${id}/versions`,
+      toQueryParams(query),
+    );
+  }
+
+  /**
+   * Obtém o conteúdo completo de uma versão gravada do template.
+   *
+   * @example
+   * ```typescript
+   * const { data, error } = await coffeemail.templates.getVersion('tpl_123', 3);
+   * ```
+   */
+  public async getVersion(
+    id: string,
+    version: number,
+  ): Promise<CoffeeMailResponse<TemplateVersionDetail>> {
+    return this.http.get<TemplateVersionDetail>(
+      `/v1/product/templates/${id}/versions/${version}`,
+    );
+  }
+
+  /**
+   * Restaura o template para o conteúdo de uma versão gravada e devolve o
+   * template atualizado.
+   *
+   * @example
+   * ```typescript
+   * const { data, error } = await coffeemail.templates.restoreVersion('tpl_123', 3);
+   * ```
+   */
+  public async restoreVersion(
+    id: string,
+    version: number,
+  ): Promise<CoffeeMailResponse<TemplateDetail>> {
+    return this.http.post<TemplateDetail>(
+      `/v1/product/templates/${id}/versions/${version}/restore`,
     );
   }
 }

@@ -14,6 +14,7 @@ describe("CoffeeMail SDK Client", () => {
     expect(client.suppressions).toBeDefined();
     expect(client.webhooks).toBeDefined();
     expect(client.stats).toBeDefined();
+    expect(client.validation).toBeDefined();
   });
 
   it("deve ler apiKey da variável de ambiente se não fornecida no construtor", () => {

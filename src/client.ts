@@ -7,6 +7,7 @@ import { Stats } from "./resources/stats.js";
 import { Senders } from "./resources/senders.js";
 import { Suppressions } from "./resources/suppressions.js";
 import { Templates } from "./resources/templates.js";
+import { Validation } from "./resources/validation.js";
 import { Webhooks } from "./resources/webhooks.js";
 
 import type { CoffeeMailClientOptions } from "./core/types.js";
@@ -24,6 +25,7 @@ import type { CoffeeMailClientOptions } from "./core/types.js";
  * - `suppressions`: Gestão de descadastros e bounces.
  * - `webhooks`: Endpoints de eventos e validação criptográfica de assinatura HMAC.
  * - `stats`: Métricas e taxas de entrega.
+ * - `validation`: Validação de endereços (formato, MX e domínio descartável).
  *
  * @example
  * ```typescript
@@ -86,6 +88,11 @@ export class CoffeeMail {
   public readonly stats: Stats;
 
   /**
+   * Validação de endereços de e-mail.
+   */
+  public readonly validation: Validation;
+
+  /**
    * Cria uma nova instância do cliente CoffeeMail.
    *
    * @param apiKey Chave de API de Produto (ex: `cm_live_...`). Se não informada, tenta ler da variável de ambiente `COFFEEMAIL_API_KEY`.
@@ -109,6 +116,7 @@ export class CoffeeMail {
     this.suppressions = new Suppressions(this.http);
     this.webhooks = new Webhooks(this.http);
     this.stats = new Stats(this.http);
+    this.validation = new Validation(this.http);
   }
 
   public introspect(forceRefresh = false) {

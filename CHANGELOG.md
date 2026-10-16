@@ -15,6 +15,10 @@ Todas as mudanças relevantes deste projeto são documentadas aqui. O formato se
 - `domains.get()` expõe `dkimRotation`, `returnPath`, `trackingDomain` e `trackingDomainsAvailable`.
 - `domains.getWarmupStatus()` expõe `status` (`warming` | `completed`), `totalDays`, `startedAt` e `completedAt`.
 - `DomainDnsRecord.isInfrastructure`. Tipos `DomainDkimRotation`, `DomainCustomHostStatus`, `DomainWarmupState` e `SetTrackingDomainPayload` exportados e conferidos em tempo de compilação contra o OpenAPI da API.
+- `templates.listVersions(id, { limit?, offset? })`, `templates.getVersion(id, version)` e `templates.restoreVersion(id, version)`: histórico de versões do template, conteúdo de uma versão e restauração (devolve o template). Versão inexistente responde `NotFoundError` com `apiCode` `TEMPLATE_VERSION_NOT_FOUND`. Tipos `ListTemplateVersionsQuery`, `ListTemplateVersionsResponse`, `TemplateVersionSummary` e `TemplateVersionDetail` exportados.
+- Recurso `validation` com `validate(emails)`: valida de 1 a 100 endereços (formato, MX, descartável) e devolve o saldo de créditos do mês. Créditos esgotados respondem `RateLimitError` com `apiCode` `VALIDATION_CREDITS_EXHAUSTED`, que não deve ser repetido. Tipos `ValidateEmailsResponse`, `EmailValidationItem` e `EmailValidationCredits` exportados.
+- `webhooks.getDelivery(id, deliveryId)` devolve a entrega com o corpo enviado (`requestPayload`) e `webhooks.replayDelivery(id, deliveryId)` reenvia a entrega, devolvendo a nova (`status: "pending"`). Erros: `NotFoundError` (`WEBHOOK_NOT_FOUND`, `WEBHOOK_DELIVERY_NOT_FOUND`) e `ConflictError` (`WEBHOOK_DELIVERY_PENDING`, `WEBHOOK_NOT_ACTIVE`). Tipo `WebhookDeliveryDetail` exportado.
+- `templateId` em `emails.send()` e `emails.sendBatch()` aceita o id ou o alias do template.
 
 ### Alterado
 

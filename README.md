@@ -36,7 +36,7 @@
 
 ## ✨ Visão geral
 
-`@coffeemail/node` é o cliente da API de Produto do CoffeeMail (rotas `/v1/product/*`). Cada recurso da API vira uma propriedade do client (`emails`, `domains`, `templates`, `audiences`, `broadcasts`, `senders`, `suppressions`, `webhooks`, `stats`), e toda chamada HTTP devolve um envelope `{ data, error }` em vez de lançar exceção.
+`@coffeemail/node` é o cliente da API de Produto do CoffeeMail (rotas `/v1/product/*`). Cada recurso da API vira uma propriedade do client (`emails`, `domains`, `templates`, `audiences`, `broadcasts`, `senders`, `suppressions`, `webhooks`, `stats`, `validation`), e toda chamada HTTP devolve um envelope `{ data, error }` em vez de lançar exceção.
 
 - **TypeScript estrito**: tipos públicos escritos à mão em `src/types/`, conferidos em tempo de compilação contra os tipos gerados do OpenAPI da API (`src/generated/contract-check.ts`).
 - **ESM e CommonJS**: build dual com `tsup` (`dist/index.js` e `dist/index.cjs`, com `.d.ts`).
@@ -211,7 +211,7 @@ Todas as classes estendem `CoffeeMailError` e são exportadas pelo pacote. Campo
 
 - `status`: status HTTP (0 em falha de rede).
 - `code`: código canônico da classe (tabela abaixo), igual em todos os SDKs oficiais.
-- `apiCode`: código original enviado pela API, quando houver. Um `429` pode ser `RATE_LIMIT_EXCEEDED` (limite de requisições) ou `PLAN_QUOTA_EXCEEDED` (cota do plano esgotada).
+- `apiCode`: código original enviado pela API, quando houver. Um `429` pode ser `RATE_LIMIT_EXCEEDED` (limite de requisições), `PLAN_QUOTA_EXCEEDED` (cota do plano esgotada) ou `VALIDATION_CREDITS_EXHAUSTED` (créditos de validação do mês esgotados); só o primeiro vale repetir depois de `retryAfterSeconds`.
 - `message`: mensagem da API ou, na falta dela, a do SDK no `locale` configurado.
 - `details`: `error.meta` e `error.details` da resposta unidos num objeto (em validação, `details.issues` lista os campos inválidos).
 - `requestId`: valor do header `x-request-id` da resposta, útil para suporte.
@@ -252,7 +252,7 @@ Os endpoints abaixo são relativos a `https://api.coffeemail.com.br` e todos os 
 Detalhes de `SendEmailPayload`:
 
 - `from`, `to`, `cc`, `bcc` e `replyTo` aceitam `"email@dominio"`, `"Nome <email@dominio>"` ou `{ email, name? }`. `to` é um destinatário único; `cc`/`bcc` aceitam lista.
-- Conteúdo por `html`/`text` ou por `templateId` + `variables`.
+- Conteúdo por `html`/`text` ou por `templateId` (id ou alias do template) + `variables`.
 - `scheduledAt` aceita `Date` ou string ISO 8601.
 - `attachments[].content` aceita string (Base64) ou `Uint8Array`/`Buffer` (convertido para Base64). `contentType` padrão `application/octet-stream`, `disposition` padrão `attachment`, `cid` para imagens inline.
 - `tags: { name, value }[]` e `headers: Record<string, string>`.
@@ -320,6 +320,9 @@ console.log(tracking?.record, tracking?.verified);
 | `format(payload)` | Formata o código-fonte com Prettier, sem persistir. | `POST /v1/product/templates/format` |
 | `testRender(payload)` | Renderiza e sanitiza o HTML (remove scripts, iframes, `javascript:` e handlers inline). | `POST /v1/product/templates/test-render` |
 | `testSend(id, { to, variables? })` | Envia um e-mail de teste real com o template. | `POST /v1/product/templates/{id}/test-send` |
+| `listVersions(id, query?: { limit?, offset? })` | Versões gravadas, da mais recente para a mais antiga (`data`, `total`; `limit` 1–100). | `GET /v1/product/templates/{id}/versions` |
+| `getVersion(id, version)` | Conteúdo completo de uma versão (`html`, `variables`, `format`, ...). | `GET /v1/product/templates/{id}/versions/{version}` |
+| `restoreVersion(id, version)` | Restaura o template para a versão e devolve o template atualizado. | `POST /v1/product/templates/{id}/versions/{version}/restore` |
 
 ```typescript
 const { data: template } = await coffeemail.templates.create({
@@ -330,6 +333,13 @@ const { data: template } = await coffeemail.templates.create({
 
 const { data: preview } = await coffeemail.templates.previewById(template!.id, { nome: "Ana" });
 console.log(preview?.html);
+```
+
+Versões inexistentes respondem `NotFoundError` com `apiCode` `TEMPLATE_VERSION_NOT_FOUND` (template inexistente: `TEMPLATE_NOT_FOUND`).
+
+```typescript
+const { data: versions } = await coffeemail.templates.listVersions(template!.id, { limit: 10 });
+await coffeemail.templates.restoreVersion(template!.id, versions!.data[1]!.version);
 ```
 
 ### Audiences — `coffeemail.audiences`
@@ -434,6 +444,8 @@ await coffeemail.suppressions.create({ email: "nao-envie@exemplo.com", reason: "
 | `delete(id)` | Remove o webhook (204). | `DELETE /v1/product/webhooks/{id}` |
 | `rotateSecret(id)` | Gera novo segredo e invalida o anterior. | `POST /v1/product/webhooks/{id}/rotate-secret` |
 | `listDeliveries(id, query?)` | Tentativas de entrega (filtros `eventType`, `status`, `from`, `to`, `limit`). | `GET /v1/product/webhooks/{id}/deliveries` |
+| `getDelivery(id, deliveryId)` | Detalhe de uma entrega com o corpo enviado (`requestPayload`). | `GET /v1/product/webhooks/{id}/deliveries/{deliveryId}` |
+| `replayDelivery(id, deliveryId)` | Reenvia a entrega com o mesmo corpo e devolve a entrega nova (`status: "pending"`). Entrega pendente ou webhook inativo: `ConflictError` (`WEBHOOK_DELIVERY_PENDING`, `WEBHOOK_NOT_ACTIVE`). | `POST /v1/product/webhooks/{id}/deliveries/{deliveryId}/replay` |
 | `test(id)` | Envia um evento de teste ao endpoint. | `POST /v1/product/webhooks/{id}/test` |
 | `verifySignature(options)` / `Webhooks.verifySignature(options)` | Verifica a assinatura de uma entrega recebida; retorna `boolean` (síncrono). Veja [Webhooks](#-webhooks). | — |
 
@@ -457,6 +469,22 @@ console.log(webhook?.secret);
 ```typescript
 const { data: stats } = await coffeemail.stats.get({ period: "last30d", granularity: "week" });
 console.log(stats?.totalDelivered, stats?.data);
+```
+
+### Validation — `coffeemail.validation`
+
+| Método | Descrição | Endpoint |
+| --- | --- | --- |
+| `validate(emails)` | Valida de 1 a 100 endereços (formato, MX, domínio descartável) e devolve `items`, `validCount`, `invalidCount` e o saldo `credits` (`limit`/`remaining` nulos quando ilimitado). Funciona com qualquer escopo de API key. | `POST /v1/product/validate` |
+
+Com os créditos de validação do mês esgotados, a API responde `RateLimitError` com `apiCode` `VALIDATION_CREDITS_EXHAUSTED`. Não é limite de requisições: repetir a chamada não resolve até o próximo ciclo.
+
+```typescript
+const { data, error } = await coffeemail.validation.validate(["ana@empresa.com.br", "teste@mailinator.com"]);
+if (error?.apiCode === "VALIDATION_CREDITS_EXHAUSTED") {
+  console.warn("Créditos de validação esgotados neste mês");
+}
+console.log(data?.items, data?.credits.remaining);
 ```
 
 ## 🔔 Webhooks
@@ -555,7 +583,7 @@ coffee-mail-sdk-node/
 │   │   ├── errors.ts         # CoffeeMailError e subclasses
 │   │   ├── i18n/             # mensagens pt-BR e en
 │   │   └── types.ts          # CoffeeMailResponse, opções do client
-│   ├── resources/            # emails, domains, templates, audiences, broadcasts, senders, suppressions, webhooks, stats
+│   ├── resources/            # emails, domains, templates, audiences, broadcasts, senders, suppressions, webhooks, stats, validation
 │   ├── types/                # tipos públicos de payload e resposta por recurso
 │   └── generated/            # openapi.d.ts (gerado) e contract-check.ts
 ├── scripts/                  # generate-types, check-version-sync, check-code-standards

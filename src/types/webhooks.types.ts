@@ -135,6 +135,14 @@ export interface WebhookDelivery {
   readonly createdAt: string;
 }
 
+/**
+ * Entrega de webhook com o corpo exato enviado ao endpoint, como retornada por
+ * `getDelivery()` e `replayDelivery()`.
+ */
+export interface WebhookDeliveryDetail extends WebhookDelivery {
+  readonly requestPayload: string;
+}
+
 export interface ListWebhookDeliveriesResponse {
   readonly deliveries: ReadonlyArray<WebhookDelivery>;
 }
